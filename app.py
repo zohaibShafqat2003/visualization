@@ -39,6 +39,7 @@ RSL_CATEGORIES = [
 ]
 NODATA_LABEL = "No data"
 NODATA_COLOR = "#888888"
+GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
 
 st.set_page_config(
     page_title="Road Condition Map",
@@ -110,18 +111,6 @@ st.markdown(
 # ---------------------------------------------------------------------------
 # Load data
 # ---------------------------------------------------------------------------
-@st.cache_data
-def load_data(path):
-    gdf = gpd.read_file(path)
-    return gdf
-
-
-@st.cache_data
-def load_counts(path):
-    gdf = gpd.read_file(path)
-    return gdf
-
-
 def classify_rsl(value):
     """Map a remaining-service-life value to (label, color)."""
     if value == NODATA_SENTINEL:
@@ -132,26 +121,87 @@ def classify_rsl(value):
     return NODATA_LABEL, NODATA_COLOR
 
 
-def add_distance_markers(fmap, gdf, road_label=""):
-    """Add a circular badge with the km reading every 50 km along a road."""
+def popup_html(km, label, direction_choice):
+    return f"""
+    <b>km {km:.0f}</b><br>
+    Remaining service life ({direction_choice}): {label}
+    """
+
+
+@st.cache_data(show_spinner="Loading road data...", max_entries=4)
+def prepare_road_data(path):
+    gdf = gpd.read_file(path)
+    bounds = tuple(float(value) for value in gdf.total_bounds)
+
+    if GEOMETRY_SIMPLIFY_TOLERANCE:
+        display_gdf = gdf.copy()
+        display_gdf["geometry"] = display_gdf.geometry.simplify(
+            GEOMETRY_SIMPLIFY_TOLERANCE,
+            preserve_topology=True,
+        )
+    else:
+        display_gdf = gdf
+
+    features = []
+    for row in display_gdf.itertuples(index=False):
+        geometry = row.geometry
+        if geometry is None or geometry.is_empty:
+            continue
+
+        coords = tuple((lat, lon) for lon, lat in geometry.coords)
+        if not coords:
+            continue
+
+        north_label, north_color = classify_rsl(row.remaining_service_life_north)
+        south_label, south_color = classify_rsl(row.remaining_service_life_south)
+        features.append(
+            {
+                "km": float(row.km),
+                "coords": coords,
+                "length": float(geometry.length),
+                "north_label": north_label,
+                "north_color": north_color,
+                "south_label": south_label,
+                "south_color": south_color,
+            }
+        )
+
+    distance_markers = build_distance_markers(gdf)
+    return {
+        "bounds": bounds,
+        "features": features,
+        "distance_markers": distance_markers,
+    }
+
+
+def build_distance_markers(gdf):
+    """Precompute distance marker positions once per source file."""
     if "km" not in gdf.columns or gdf.empty:
-        return
+        return []
 
     km_min = float(gdf["km"].min())
     km_max = float(gdf["km"].max())
     if km_max <= km_min:
-        return
+        return []
 
     start = int(math.ceil(km_min / 50.0) * 50)
     if start == 0:
         start = 50  # skip the 0 km marker, it clutters the start of the road
 
+    markers = []
     for target_km in range(start, int(km_max) + 1, 50):
         idx = (gdf["km"] - target_km).abs().idxmin()
         row = gdf.loc[idx]
         coords = list(row.geometry.coords)
         lon, lat = coords[len(coords) // 2]
+        markers.append({"km": target_km, "lat": lat, "lon": lon})
+    return markers
 
+
+def add_distance_markers(fmap, markers, road_label=""):
+    """Add a circular badge with the km reading every 50 km along a road."""
+    for marker in markers:
+        target_km = marker["km"]
         title_attr = f"{target_km} km" + (f" ({road_label})" if road_label else "")
 
         badge_html = (
@@ -166,7 +216,7 @@ def add_distance_markers(fmap, gdf, road_label=""):
         )
 
         folium.map.Marker(
-            [lat, lon],
+            [marker["lat"], marker["lon"]],
             icon=folium.DivIcon(html=badge_html, icon_size=(32, 32), icon_anchor=(16, 16)),
         ).add_to(fmap)
 
@@ -234,11 +284,31 @@ def build_counts_popup(row):
     """
 
 
-def popup_html(row, label, direction_choice):
-    return f"""
-    <b>km {row['km']:.0f}</b><br>
-    Remaining service life ({direction_choice}): {label}
-    """
+@st.cache_data(show_spinner="Loading traffic count stations...", max_entries=1)
+def prepare_count_stations(path):
+    gdf = gpd.read_file(path)
+    stations = []
+    for _, row in gdf.iterrows():
+        row_data = row.to_dict()
+        geometry = row_data.pop("geometry")
+        if geometry is None or geometry.is_empty:
+            continue
+
+        heavy_share = row_data.get("heavy_share")
+        adt = safe_num(row_data, "ADT")
+        location_name = clean_location(row_data)
+        stations.append(
+            {
+                "road_id": row_data.get("Road.ID"),
+                "lat": float(geometry.y),
+                "lon": float(geometry.x),
+                "location_name": location_name,
+                "dot_color": heavy_share_color(heavy_share),
+                "adt_text": f"{adt:,.0f}",
+                "popup": build_counts_popup(row_data),
+            }
+        )
+    return stations
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +334,7 @@ with st.sidebar:
     )
 
     selected_labels = highway_labels if highway_choice == "Both" else [highway_choice]
-    gdfs = {label: load_data(available_datasets[label]) for label in selected_labels}
+    roads = {label: prepare_road_data(available_datasets[label]) for label in selected_labels}
 
     missing_files = [name for name in DATASETS if name not in available_datasets]
     if missing_files:
@@ -289,13 +359,16 @@ with st.sidebar:
     show_distance_markers = st.toggle("Distance markers", value=True, help="Show road markers every 50 km.")
     show_counts = st.toggle("Traffic count stations", value=False, help="Show traffic count markers for the selected road(s).")
 
-    counts_gdf = None
+    count_stations = []
     if show_counts:
         if os.path.exists(COUNTS_PATH):
-            counts_all = load_counts(COUNTS_PATH)
             wanted_road_ids = [ROAD_ID_MAP.get(lbl) for lbl in selected_labels]
-            counts_gdf = counts_all[counts_all["Road.ID"].isin(wanted_road_ids)].copy()
-            if counts_gdf.empty:
+            count_stations = [
+                station
+                for station in prepare_count_stations(COUNTS_PATH)
+                if station["road_id"] in wanted_road_ids
+            ]
+            if not count_stations:
                 st.caption("No count stations found for this selection.")
         else:
             st.warning(f"Counts file not found: {COUNTS_PATH}")
@@ -319,7 +392,7 @@ with summary_cols[2]:
 # ---------------------------------------------------------------------------
 # Build map
 # ---------------------------------------------------------------------------
-bounds_list = [gdfs[label].total_bounds for label in selected_labels]  # minx, miny, maxx, maxy
+bounds_list = [roads[label]["bounds"] for label in selected_labels]  # minx, miny, maxx, maxy
 minx = min(b[0] for b in bounds_list)
 miny = min(b[1] for b in bounds_list)
 maxx = max(b[2] for b in bounds_list)
@@ -346,21 +419,21 @@ total_length = 0.0
 
 # Categorical remaining-service-life view, one road at a time
 for label in selected_labels:
-    road_gdf = gdfs[label]
+    road = roads[label]
 
     if show_rsl:
-        for _, row in road_gdf.iterrows():
-            coords = [(lat, lon) for lon, lat in row.geometry.coords]
-            rsl_label, color = classify_rsl(row[column])
+        for feature in road["features"]:
+            rsl_label = feature[f"{direction_key}_label"]
+            color = feature[f"{direction_key}_color"]
             dash = "5,5" if rsl_label == NODATA_LABEL else None
             weight = 3 if rsl_label == NODATA_LABEL else 5
             opacity = 0.6 if rsl_label == NODATA_LABEL else 0.9
 
-            seg_length = row.geometry.length
+            seg_length = feature["length"]
             category_length[rsl_label] = category_length.get(rsl_label, 0.0) + seg_length
             total_length += seg_length
 
-            tooltip_text = f"km {row['km']:.0f} | {rsl_label}"
+            tooltip_text = f"km {feature['km']:.0f} | {rsl_label}"
             if len(selected_labels) > 1:
                 tooltip_text = f"{label} | " + tooltip_text
 
@@ -369,42 +442,49 @@ for label in selected_labels:
                 weight=weight,
                 opacity=opacity,
                 tooltip=tooltip_text,
-                popup=folium.Popup(popup_html(row, rsl_label, direction_choice), max_width=250),
+                popup=folium.Popup(
+                    popup_html(feature["km"], rsl_label, direction_choice),
+                    max_width=250,
+                ),
             )
             if dash:
                 line_kwargs["dash_array"] = dash
 
-            folium.PolyLine(coords, **line_kwargs).add_to(m)
+            folium.PolyLine(feature["coords"], **line_kwargs).add_to(m)
     else:
         # RSL layer hidden: still draw a plain road line for context
-        for _, row in road_gdf.iterrows():
-            coords = [(lat, lon) for lon, lat in row.geometry.coords]
-            folium.PolyLine(coords, color="#4a4a4a", weight=3, opacity=0.7).add_to(m)
+        for feature in road["features"]:
+            folium.PolyLine(
+                feature["coords"],
+                color="#4a4a4a",
+                weight=3,
+                opacity=0.7,
+            ).add_to(m)
 
     if show_distance_markers:
-        add_distance_markers(m, road_gdf, road_label=label if len(selected_labels) > 1 else "")
+        add_distance_markers(
+            m,
+            road["distance_markers"],
+            road_label=label if len(selected_labels) > 1 else "",
+        )
 
 # Traffic count stations: a small color-coded label, click for full details
-if counts_gdf is not None and not counts_gdf.empty:
-    for _, row in counts_gdf.iterrows():
-        location_name = clean_location(row)
-        dot_color = heavy_share_color(row.get("heavy_share"))
-        adt_text = f"{safe_num(row, 'ADT'):,.0f}"
-
+if count_stations:
+    for station in count_stations:
         label_html = (
             '<div style="display:flex;align-items:center;gap:4px;background:white;'
             "border:1px solid #333;border-radius:10px;padding:1px 6px;font-size:10px;"
             'font-weight:bold;white-space:nowrap;box-shadow:1px 1px 3px rgba(0,0,0,0.3);">'
             f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;'
-            f'background:{dot_color};flex-shrink:0;"></span>'
-            f"{adt_text}</div>"
+            f'background:{station["dot_color"]};flex-shrink:0;"></span>'
+            f"{station['adt_text']}</div>"
         )
 
         folium.Marker(
-            location=[row.geometry.y, row.geometry.x],
+            location=[station["lat"], station["lon"]],
             icon=folium.DivIcon(html=label_html, icon_size=(120, 20), icon_anchor=(-4, 10)),
-            tooltip=f"{location_name} — click for traffic details",
-            popup=folium.Popup(build_counts_popup(row), max_width=260),
+            tooltip=f"{station['location_name']} — click for traffic details",
+            popup=folium.Popup(station["popup"], max_width=260),
         ).add_to(m)
 
 if show_rsl:
@@ -467,7 +547,7 @@ else:
         "Road condition (remaining service life) layer is hidden. "
         "Circular badges show distance along the road every 50 km."
     )
-if counts_gdf is not None and not counts_gdf.empty:
+if count_stations:
     caption_text += (
         " Labeled markers are traffic count stations, color-coded by heavy-traffic share "
         "(green = low, red = high) — click a label for ADT, heavy traffic, and the full "
