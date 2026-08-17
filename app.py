@@ -31,15 +31,21 @@ ROAD_ID_MAP = {
 
 # Remaining service life category bins: (lower_inclusive, upper_exclusive, label, color)
 RSL_CATEGORIES = [
-    (0, 1, "Very Poor", "#d73027"),
-    (1, 2, "Poor", "#fc8d59"),
-    (2, 4, "Fair", "#fee08b"),
+    (0, 1, "Very Poor <1 year", "#d73027"),
+    (1, 2, "Poor 1-2 years", "#fc8d59"),
+    (2, 4, "Fair 2-4 years", "#fee08b"),
     #(3, 4, "Fair", "#fee08b"),
-    (4, float("inf"), "Good", "#1a9850"),
+    (4, float("inf"), "Good >=4 years", "#1a9850"),
 ]
 NODATA_LABEL = "No data"
 NODATA_COLOR = "#888888"
 GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
+TRAFFIC_SHARE_BANDS = [
+    ("Low", 0.15, "#1a9850", "#e8f5ec", "#b8dfc4"),
+    ("Moderate", 0.25, "#d9a300", "#fff7d6", "#f0d36b"),
+    ("High", 0.35, "#e85d2a", "#fff0e8", "#f3b59b"),
+    ("Very high", float("inf"), "#c92a2a", "#ffe8e8", "#eba3a3"),
+]
 
 st.set_page_config(
     page_title="Road Condition Map",
@@ -97,7 +103,7 @@ st.markdown(
 )
 
 st.title("Road Condition Map")
-st.caption("Interactive highway condition monitoring for remaining service life and traffic volume.")
+st.caption("Interactive Highway Condition Monitoring")
 
 st.markdown(
     """
@@ -121,9 +127,53 @@ def classify_rsl(value):
     return NODATA_LABEL, NODATA_COLOR
 
 
-def popup_html(km, label, direction_choice):
+def _is_valid_rsl(value):
+    return pd.notna(value) and value != NODATA_SENTINEL
+
+
+def average_rsl_value(north_value, south_value):
+    north_valid = _is_valid_rsl(north_value)
+    south_valid = _is_valid_rsl(south_value)
+
+    if north_valid and south_valid:
+        return (north_value + south_value) / 2
+    if north_valid:
+        return north_value
+    if south_valid:
+        return south_value
+    return NODATA_SENTINEL
+
+
+def popup_html(feature, label, direction_choice):
+    if direction_choice == "Average (both directions)":
+        north_value = feature["north_value"]
+        south_value = feature["south_value"]
+        north_valid = _is_valid_rsl(north_value)
+        south_valid = _is_valid_rsl(south_value)
+
+        if north_valid and south_valid:
+            note = "average of both lanes"
+        elif north_valid:
+            note = "north bound only - south bound missing"
+        elif south_valid:
+            note = "south bound only - north bound missing"
+        else:
+            note = "no data on either lane"
+
+        north_text = f"{north_value:.1f}" if north_valid else "No data"
+        south_text = f"{south_value:.1f}" if south_valid else "No data"
+
+        return f"""
+        <b>km {feature['km']:.0f}</b><br>
+        Remaining service life (average): {label}<br>
+        <span style="font-size:11px;color:#555;">
+        North: {north_text} yrs &nbsp;|&nbsp; South: {south_text} yrs<br>
+        ({note})
+        </span>
+        """
+
     return f"""
-    <b>km {km:.0f}</b><br>
+    <b>km {feature['km']:.0f}</b><br>
     Remaining service life ({direction_choice}): {label}
     """
 
@@ -152,17 +202,25 @@ def prepare_road_data(path):
         if not coords:
             continue
 
-        north_label, north_color = classify_rsl(row.remaining_service_life_north)
-        south_label, south_color = classify_rsl(row.remaining_service_life_south)
+        north_value = row.remaining_service_life_north
+        south_value = row.remaining_service_life_south
+        average_value = average_rsl_value(north_value, south_value)
+        north_label, north_color = classify_rsl(north_value)
+        south_label, south_color = classify_rsl(south_value)
+        average_label, average_color = classify_rsl(average_value)
         features.append(
             {
                 "km": float(row.km),
                 "coords": coords,
                 "length": float(geometry.length),
+                "north_value": north_value,
                 "north_label": north_label,
                 "north_color": north_color,
+                "south_value": south_value,
                 "south_label": south_label,
                 "south_color": south_color,
+                "average_label": average_label,
+                "average_color": average_color,
             }
         )
 
@@ -221,17 +279,49 @@ def add_distance_markers(fmap, markers, road_label=""):
         ).add_to(fmap)
 
 
-def heavy_share_color(share):
-    """Color-code a count station label by its heavy-traffic share."""
+def heavy_share_style(share):
+    """Return label and colors for a count station's heavy-traffic share."""
     if share is None or pd.isna(share):
-        return "#888888"
-    if share < 0.15:
-        return "#1a9850"
-    if share < 0.25:
-        return "#fee08b"
-    if share < 0.35:
-        return "#fc8d59"
-    return "#d73027"
+        return {
+            "label": "No data",
+            "color": "#64748b",
+            "background": "#f1f5f9",
+            "border": "#cbd5e1",
+        }
+
+    for label, upper_bound, color, background, border in TRAFFIC_SHARE_BANDS:
+        if share < upper_bound:
+            return {
+                "label": label,
+                "color": color,
+                "background": background,
+                "border": border,
+            }
+
+
+def format_count(value):
+    if value >= 1000:
+        return f"{value / 1000:.1f}k"
+    return f"{value:.0f}"
+
+
+def build_count_marker_html(station):
+    return f"""
+    <div style="position:relative;display:flex;align-items:center;gap:5px;
+        font-family:Inter,Segoe UI,Arial,sans-serif;transform:translate(-14px,-14px);">
+        <div style="width:22px;height:22px;border-radius:50%;background:{station['color']};
+            border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.35);
+            display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <div style="width:7px;height:7px;border-radius:50%;background:white;"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.96);border:1px solid {station['border']};
+            border-left:3px solid {station['color']};border-radius:7px;padding:2px 7px 3px 6px;
+            box-shadow:0 2px 8px rgba(15,23,42,.22);line-height:1;white-space:nowrap;">
+            <div style="font-size:9px;color:#64748b;font-weight:700;letter-spacing:.03em;">AADT</div>
+            <div style="font-size:12px;color:#0f172a;font-weight:800;margin-top:1px;">{station['adt_compact']}</div>
+        </div>
+    </div>
+    """
 
 
 def safe_num(row, col):
@@ -242,20 +332,7 @@ def safe_num(row, col):
         return 0.0
 
 
-def clean_location(row):
-    location_name = row.get("Location")
-    if (
-        not location_name
-        or (isinstance(location_name, float) and pd.isna(location_name))
-        or not str(location_name).strip()
-    ):
-        return "Unnamed station"
-    return str(location_name)
-
-
 def build_counts_popup(row):
-    location_name = clean_location(row)
-
     adt = safe_num(row, "ADT")
     heavy = safe_num(row, "heavy_traffic")
     heavy_share = row.get("heavy_share")
@@ -269,17 +346,27 @@ def build_counts_popup(row):
     large_bus = safe_num(row, "large_bus")
 
     return f"""
-    <div style="font-size:13px; min-width:210px;">
-        <b>{location_name}</b> ({row.get('Road.ID', '')})<br>
-        <hr style="margin:4px 0;">
-        <b>ADT:</b> {adt:,.0f}<br>
-        <b>Heavy traffic:</b> {heavy:,.0f} ({heavy_pct})<br>
-        <b>Cars:</b> {cars:,.0f}<br>
-        <b>Motorcycles:</b> {mc:,.0f}<br>
-        <b>Rickshaws:</b> {rickshaws:,.0f}<br>
-        <b>Light trucks / pickups:</b> {light_pickup:,.0f}<br>
-        <b>Mini buses:</b> {mini_bus:,.0f}<br>
-        <b>Large buses:</b> {large_bus:,.0f}
+    <div style="font-family:Inter,Segoe UI,Arial,sans-serif;min-width:300px;color:#0f172a;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#f8fafc;">
+                <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">ADT</div>
+                <div style="font-size:24px;font-weight:800;margin-top:3px;">{adt:,.0f}</div>
+            </div>
+            <div style="border:1px solid #f3b59b;border-radius:8px;padding:10px;background:#fff0e8;">
+                <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Heavy share</div>
+                <div style="font-size:24px;font-weight:800;margin-top:3px;color:#e85d2a;">{heavy_pct}</div>
+            </div>
+        </div>
+        <div style="font-size:13px;color:#64748b;font-weight:700;margin-bottom:7px;">Vehicle breakdown</div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:5px 18px;font-size:13px;line-height:1.25;">
+            <span>Heavy vehicles</span><b>{heavy:,.0f}</b>
+            <span>Cars</span><b>{cars:,.0f}</b>
+            <span>Motorcycles</span><b>{mc:,.0f}</b>
+            <span>Rickshaws</span><b>{rickshaws:,.0f}</b>
+            <span>Light trucks / pickups</span><b>{light_pickup:,.0f}</b>
+            <span>Mini buses</span><b>{mini_bus:,.0f}</b>
+            <span>Large buses</span><b>{large_bus:,.0f}</b>
+        </div>
     </div>
     """
 
@@ -296,15 +383,18 @@ def prepare_count_stations(path):
 
         heavy_share = row_data.get("heavy_share")
         adt = safe_num(row_data, "ADT")
-        location_name = clean_location(row_data)
+        traffic_style = heavy_share_style(heavy_share)
         stations.append(
             {
                 "road_id": row_data.get("Road.ID"),
                 "lat": float(geometry.y),
                 "lon": float(geometry.x),
-                "location_name": location_name,
-                "dot_color": heavy_share_color(heavy_share),
+                "color": traffic_style["color"],
+                "border": traffic_style["border"],
+                "traffic_label": traffic_style["label"],
+                "heavy_share_text": f"{float(heavy_share) * 100:.1f}%" if pd.notna(heavy_share) else "N/A",
                 "adt_text": f"{adt:,.0f}",
+                "adt_compact": format_count(adt),
                 "popup": build_counts_popup(row_data),
             }
         )
@@ -341,23 +431,44 @@ with st.sidebar:
         st.caption(f"Not found: {', '.join(missing_files)}")
 
     st.markdown("### Display options")
-    metric_choice = "Remaining Service Life"
-    metric_key = "remaining_service_life"
 
     direction_choice = st.pills(
         "Direction",
-        ["North bound", "South bound"],
+        ["North bound", "South bound", "Average (both directions)"],
         default="North bound",
         selection_mode="single",
     )
+    if direction_choice == "Average (both directions)":
+        st.caption(
+            "Averages both lanes; if one lane is missing data, the other lane's "
+            "value is used instead."
+        )
 
-    direction_key = "north" if direction_choice == "North bound" else "south"
-    column = f"{metric_key}_{direction_key}"
+    if direction_choice == "Average (both directions)":
+        direction_key = "average"
+    else:
+        direction_key = "north" if direction_choice == "North bound" else "south"
 
     st.markdown("### Layers")
     show_rsl = st.toggle("Road condition", value=True, help="Color roads by remaining service life.")
     show_distance_markers = st.toggle("Distance markers", value=True, help="Show road markers every 50 km.")
     show_counts = st.toggle("Traffic count stations", value=False, help="Show traffic count markers for the selected road(s).")
+
+    if show_rsl:
+        sidebar_legend_rows = "".join(
+            f'<div style="display:flex;align-items:center;margin:2px 0;">'
+            f'<span style="display:inline-block;width:12px;height:12px;'
+            f'background:{color};margin-right:6px;border-radius:2px;"></span>'
+            f'<span style="font-size:13px;">{label}</span></div>'
+            for _, _, label, color in RSL_CATEGORIES
+        )
+        sidebar_legend_rows += (
+            f'<div style="display:flex;align-items:center;margin:2px 0;">'
+            f'<span style="display:inline-block;width:12px;height:12px;'
+            f'background:{NODATA_COLOR};margin-right:6px;border-radius:2px;"></span>'
+            f'<span style="font-size:13px;">{NODATA_LABEL}</span></div>'
+        )
+        st.markdown(sidebar_legend_rows, unsafe_allow_html=True)
 
     count_stations = []
     if show_counts:
@@ -370,24 +481,21 @@ with st.sidebar:
             ]
             if not count_stations:
                 st.caption("No count stations found for this selection.")
+            else:
+                st.caption(f"{len(count_stations)} traffic count station(s) shown.")
+                traffic_legend_rows = "".join(
+                    f'<div style="display:flex;align-items:center;margin:2px 0;">'
+                    f'<span style="display:inline-block;width:10px;height:10px;'
+                    f'background:{color};margin-right:6px;border-radius:50%;"></span>'
+                    f'<span style="font-size:13px;">{label} heavy share</span></div>'
+                    for label, _, color, _, _ in TRAFFIC_SHARE_BANDS
+                )
+                st.markdown(traffic_legend_rows, unsafe_allow_html=True)
         else:
             st.warning(f"Counts file not found: {COUNTS_PATH}")
 
-    st.markdown("---")
-    st.caption("Legend colors reflect remaining service life thresholds.")
-
-# ---------------------------------------------------------------------------
-# Summary metrics
-# ---------------------------------------------------------------------------
-selected_count = len(selected_labels)
-road_summary = ", ".join(selected_labels) if selected_count > 0 else "None"
-summary_cols = st.columns(3)
-with summary_cols[0]:
-    st.metric("Selected roads", road_summary)
-with summary_cols[1]:
-    st.metric("Direction", direction_choice)
-with summary_cols[2]:
-    st.metric("Visible layers", str(int(show_rsl) + int(show_distance_markers) + int(show_counts)))
+    if show_rsl:
+        st.caption("Road colors reflect remaining service life thresholds.")
 
 # ---------------------------------------------------------------------------
 # Build map
@@ -408,15 +516,6 @@ m = folium.Map(
     control_scale=True,
 )
 
-# Track total length per RSL category so the legend can show % of road length
-category_labels_ordered = []
-for _, _, lab, _ in RSL_CATEGORIES:
-    if lab not in category_labels_ordered:
-        category_labels_ordered.append(lab)
-category_length = {lab: 0.0 for lab in category_labels_ordered}
-category_length[NODATA_LABEL] = 0.0
-total_length = 0.0
-
 # Categorical remaining-service-life view, one road at a time
 for label in selected_labels:
     road = roads[label]
@@ -429,10 +528,6 @@ for label in selected_labels:
             weight = 3 if rsl_label == NODATA_LABEL else 5
             opacity = 0.6 if rsl_label == NODATA_LABEL else 0.9
 
-            seg_length = feature["length"]
-            category_length[rsl_label] = category_length.get(rsl_label, 0.0) + seg_length
-            total_length += seg_length
-
             tooltip_text = f"km {feature['km']:.0f} | {rsl_label}"
             if len(selected_labels) > 1:
                 tooltip_text = f"{label} | " + tooltip_text
@@ -443,8 +538,8 @@ for label in selected_labels:
                 opacity=opacity,
                 tooltip=tooltip_text,
                 popup=folium.Popup(
-                    popup_html(feature["km"], rsl_label, direction_choice),
-                    max_width=250,
+                    popup_html(feature, rsl_label, direction_choice),
+                    max_width=270,
                 ),
             )
             if dash:
@@ -468,66 +563,18 @@ for label in selected_labels:
             road_label=label if len(selected_labels) > 1 else "",
         )
 
-# Traffic count stations: a small color-coded label, click for full details
+# Traffic count stations: styled markers with compact AADT chips.
 if count_stations:
     for station in count_stations:
-        label_html = (
-            '<div style="display:flex;align-items:center;gap:4px;background:white;'
-            "border:1px solid #333;border-radius:10px;padding:1px 6px;font-size:10px;"
-            'font-weight:bold;white-space:nowrap;box-shadow:1px 1px 3px rgba(0,0,0,0.3);">'
-            f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;'
-            f'background:{station["dot_color"]};flex-shrink:0;"></span>'
-            f"{station['adt_text']}</div>"
-        )
-
         folium.Marker(
             location=[station["lat"], station["lon"]],
-            icon=folium.DivIcon(html=label_html, icon_size=(120, 20), icon_anchor=(-4, 10)),
-            tooltip=f"{station['location_name']} — click for traffic details",
-            popup=folium.Popup(station["popup"], max_width=260),
+            icon=folium.DivIcon(
+                html=build_count_marker_html(station),
+                icon_size=(92, 34),
+                icon_anchor=(12, 12),
+            ),
+            popup=folium.Popup(station["popup"], max_width=300),
         ).add_to(m)
-
-if show_rsl:
-    # Build a categorical legend, with % of shown road length per category
-    legend_items = []
-    seen = set()
-    for lo, hi, label, color in RSL_CATEGORIES:
-        if label not in seen:
-            legend_items.append((label, color))
-            seen.add(label)
-    legend_items.append((NODATA_LABEL, NODATA_COLOR))
-
-    def pct_for(label):
-        if total_length <= 0:
-            return None
-        return category_length.get(label, 0.0) / total_length * 100
-
-    legend_rows = ""
-    for label, color in legend_items:
-        pct = pct_for(label)
-        pct_text = f" — {pct:.0f}%" if pct is not None else ""
-        legend_rows += (
-            f'<span style="display:inline-block;width:12px;height:12px;'
-            f'background:{color};margin-right:6px;"></span>{label}{pct_text}<br>'
-        )
-
-    legend_html = f"""
-    <div style="
-        position: fixed;
-        bottom: 30px; left: 30px;
-        z-index: 9999;
-        background: white;
-        padding: 10px 14px;
-        border: 1px solid #999;
-        border-radius: 4px;
-        font-size: 13px;
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
-    ">
-        <b>Remaining service life ({direction_choice})</b><br>
-        {legend_rows}
-    </div>
-    """
-    m.get_root().html.add_child(folium.Element(legend_html))
 
 # ---------------------------------------------------------------------------
 # Render
@@ -550,7 +597,7 @@ else:
 if count_stations:
     caption_text += (
         " Labeled markers are traffic count stations, color-coded by heavy-traffic share "
-        "(green = low, red = high) — click a label for ADT, heavy traffic, and the full "
+        "(green = low, red = high) — click a station marker for ADT, heavy traffic, and the full "
         "vehicle-type breakdown."
     )
 st.caption(caption_text)
