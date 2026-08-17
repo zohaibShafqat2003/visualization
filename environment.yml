@@ -1,0 +1,13 @@
+name: visualization
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - streamlit
+  - geopandas
+  - pandas
+  - folium
+  - pip
+  - pip:
+    - streamlit-folium
