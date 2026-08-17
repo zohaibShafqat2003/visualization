@@ -15,11 +15,11 @@ from streamlit_folium import st_folium
 NODATA_SENTINEL = -99
 
 DATASETS = {
-    "N5": "segments_N5.gpkg",
-    "N-55": "segments_N55.gpkg",
+    "N5": os.path.join("data", "segments_N5.gpkg"),
+    "N-55": os.path.join("data", "segments_N55.gpkg"),
 }
 
-COUNTS_PATH = "counts_N5_N55.gpkg"
+COUNTS_PATH = os.path.join("data", "counts_N5_N55.gpkg")
 
 # Maps the highway label used in DATASETS/the sidebar to the value found in
 # the counts file's "Road.ID" column, so the counts layer can be filtered to
@@ -182,13 +182,10 @@ def popup_html(row, label, direction_choice):
 # ---------------------------------------------------------------------------
 st.sidebar.header("Dataset")
 
-available_datasets = {
-    name: path for name, path in DATASETS.items() if os.path.exists(path)
-}
+available_datasets = {name: path for name, path in DATASETS.items() if os.path.exists(path)}
 if not available_datasets:
     st.error(
-        "No dataset files found. Place segments_N5.gpkg and/or "
-        "segments_N55.gpkg in the same folder as app.py."
+        "No dataset files found. Place the .gpkg files in a subfolder named 'data'"
     )
     st.stop()
 
