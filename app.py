@@ -19,13 +19,13 @@ from src.config import (
     RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
-from src.data_loader import prepare_count_stations, prepare_road_data
+from src.data_loader import condition_percentages, prepare_count_stations, prepare_road_data
 from src.map_layers import (
+    add_condition_legend,
     add_condition_corridor,
     add_distance_marker_zoom_toggle,
     add_distance_markers,
     add_plain_road_corridor,
-    add_road_hit_lines,
     add_station_markers,
 )
 
@@ -80,6 +80,53 @@ st.markdown(
             font-weight: 700;
             color: #0f172a;
         }
+        .condition-key {
+            margin: 0.65rem 0 0.75rem 0;
+            padding: 0.75rem 0.85rem;
+            background: rgba(255, 255, 255, 0.58);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 10px;
+        }
+        .condition-key-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 0.45rem;
+        }
+        .condition-key-row {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin: 0.32rem 0;
+        }
+        .condition-key-line {
+            display: inline-block;
+            width: 34px;
+            border-top-width: 5px;
+            border-top-style: solid;
+            border-radius: 999px;
+            flex: 0 0 34px;
+        }
+        .condition-key-label {
+            font-size: 0.86rem;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        .built-by-watermark {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 0.85rem;
+            z-index: 999;
+            padding: 0.42rem 0.72rem;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.10);
+            color: #334155;
+            font-size: 0.76rem;
+            font-weight: 600;
+            backdrop-filter: blur(8px);
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -87,6 +134,15 @@ st.markdown(
 
 st.title("Road Condition Map")
 st.caption("Interactive Highway Condition Monitoring")
+
+st.markdown(
+    """
+    <div class="built-by-watermark">
+        Built by Zohaib Shafqat, AI Engineer
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     """
@@ -148,23 +204,30 @@ with st.sidebar:
         value=highway_choice != "Both",
         help="Show road markers every 50 km.",
     )
-    show_counts = st.toggle("Traffic count stations", value=False, help="Show traffic count markers for the selected road(s).")
 
     if show_rsl:
         sidebar_legend_rows = "".join(
-            f'<div style="display:flex;align-items:center;margin:2px 0;">'
-            f'<span style="display:inline-block;width:28px;border-top:5px solid {color};'
-            f'margin-right:8px;border-radius:999px;"></span>'
-            f'<span style="font-size:13px;">{label}</span></div>'
+            f'<div class="condition-key-row">'
+            f'<span class="condition-key-line" style="border-top-color:{color};"></span>'
+            f'<span class="condition-key-label">{label}</span></div>'
             for _, _, label, color in RSL_CATEGORIES
         )
         sidebar_legend_rows += (
-            f'<div style="display:flex;align-items:center;margin:2px 0;">'
-            f'<span style="display:inline-block;width:28px;border-top:5px dashed {NODATA_COLOR};'
-            f'margin-right:8px;border-radius:999px;"></span>'
-            f'<span style="font-size:13px;">{NODATA_LABEL}</span></div>'
+            f'<div class="condition-key-row">'
+            f'<span class="condition-key-line" style="border-top-color:{NODATA_COLOR};border-top-style:dashed;"></span>'
+            f'<span class="condition-key-label">{NODATA_LABEL}</span></div>'
         )
-        st.markdown(sidebar_legend_rows, unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="condition-key">
+                <div class="condition-key-title">Road condition key</div>
+                {sidebar_legend_rows}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    show_counts = st.toggle("Traffic count stations", value=False, help="Show traffic count markers for the selected road(s).")
 
     count_stations = []
     if show_counts:
@@ -178,7 +241,7 @@ with st.sidebar:
             if not count_stations:
                 st.caption("No count stations found for this selection.")
             else:
-                st.caption(f"{len(count_stations)} traffic count station(s) shown.")
+                st.caption(f"")
         else:
             st.warning(f"Counts file not found: {COUNTS_PATH}")
 
@@ -207,15 +270,6 @@ for label in selected_labels:
     else:
         add_plain_road_corridor(m, road)
 
-    add_road_hit_lines(
-        m,
-        road["features"],
-        direction_key,
-        direction_choice,
-        road_label=road_label,
-        show_rsl=show_rsl,
-    )
-
     if show_distance_markers:
         add_distance_markers(
             m,
@@ -226,6 +280,13 @@ for label in selected_labels:
 if count_stations:
     add_station_markers(m, count_stations)
 
+if show_rsl:
+    add_condition_legend(
+        m,
+        condition_percentages(roads, selected_labels, direction_key),
+        direction_choice,
+    )
+
 if show_distance_markers:
     add_distance_marker_zoom_toggle(m)
 
@@ -235,7 +296,7 @@ with st.container(border=True):
         width=None,
         height=680,
         returned_objects=[],
-        key=f"road-map-{highway_choice}-{direction_key}-{show_rsl}-{show_distance_markers}-{show_counts}",
+        key="road-map",
     )
 
 if show_rsl:
@@ -246,8 +307,6 @@ if show_rsl:
     )
     caption_text = (
         "Grey dashed segments indicate missing data."
-        f"{distance_caption}"
-        "Click a colored segment to see its remaining service life category. "
         f"{distance_caption}"
         "The legend shows what share of the displayed road length falls in each condition category."
     )

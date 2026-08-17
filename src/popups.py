@@ -66,7 +66,7 @@ def build_counts_popup(row):
             <span>Motorcycles</span><b>{mc:,.0f}</b>
             <span>Rickshaws</span><b>{rickshaws:,.0f}</b>
             <span>Large buses</span><b>{large_bus:,.0f}</b>
-            <span>Trucks / pickups / mini buses</span><b>{trucks_pickups_mini_buses:,.0f}</b>
+            <span>Light trucks/mini bus</span><b>{trucks_pickups_mini_buses:,.0f}</b>
             <span>Trucks (2/3/4/5/6 axles)</span><b>{heavy:,.0f}</b>
         </div>
     </div>

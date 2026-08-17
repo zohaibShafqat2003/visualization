@@ -1,43 +1,14 @@
 import folium
 from branca.element import MacroElement, Template
 
-from src.config import DISTANCE_MARKER_MIN_ZOOM, NODATA_LABEL, PROBLEM_RSL_LABELS
-from src.data_loader import is_valid_rsl
+from src.config import (
+    DISTANCE_MARKER_MIN_ZOOM,
+    NODATA_COLOR,
+    NODATA_LABEL,
+    PROBLEM_RSL_LABELS,
+    RSL_CATEGORIES,
+)
 from src.popups import build_count_marker_html
-
-
-def popup_html(feature, label, direction_choice):
-    if direction_choice == "Average (both directions)":
-        north_value = feature["north_value"]
-        south_value = feature["south_value"]
-        north_valid = is_valid_rsl(north_value)
-        south_valid = is_valid_rsl(south_value)
-
-        if north_valid and south_valid:
-            note = "average of both lanes"
-        elif north_valid:
-            note = "north bound only - south bound missing"
-        elif south_valid:
-            note = "south bound only - north bound missing"
-        else:
-            note = "no data on either lane"
-
-        north_text = f"{north_value:.1f}" if north_valid else "No data"
-        south_text = f"{south_value:.1f}" if south_valid else "No data"
-
-        return f"""
-        <b>km {feature['km']:.0f}</b><br>
-        Remaining service life (average): {label}<br>
-        <span style="font-size:11px;color:#555;">
-        North: {north_text} yrs &nbsp;|&nbsp; South: {south_text} yrs<br>
-        ({note})
-        </span>
-        """
-
-    return f"""
-    <b>km {feature['km']:.0f}</b><br>
-    Remaining service life ({direction_choice}): {label}
-    """
 
 
 def road_overlay_weight(rsl_label):
@@ -48,77 +19,150 @@ def road_overlay_weight(rsl_label):
     return 6
 
 
-def add_road_casing(fmap, paths):
-    for coords in paths:
-        if len(coords) < 2:
-            continue
+def to_geojson_line(coords):
+    return [[lon, lat] for lat, lon in coords]
 
-        folium.PolyLine(
-            coords,
-            color="#ffffff",
-            weight=8,
-            opacity=0.96,
-            line_cap="round",
-            line_join="round",
-            smooth_factor=1.25,
-        ).add_to(fmap)
+
+def add_geojson_lines(fmap, features):
+    if not features:
+        return
+
+    folium.GeoJson(
+        {
+            "type": "FeatureCollection",
+            "features": features,
+        },
+        style_function=lambda feature: {
+            "color": feature["properties"]["color"],
+            "weight": feature["properties"]["weight"],
+            "opacity": feature["properties"]["opacity"],
+            "dashArray": feature["properties"].get("dashArray"),
+            "lineCap": feature["properties"].get("lineCap", "round"),
+            "lineJoin": "round",
+        },
+        smooth_factor=1.4,
+    ).add_to(fmap)
+
+
+def add_road_casing(fmap, paths):
+    features = []
+    for coords in paths:
+        if len(coords) >= 2:
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": to_geojson_line(coords),
+                    },
+                    "properties": {
+                        "color": "#ffffff",
+                        "weight": 8,
+                        "opacity": 0.96,
+                        "lineCap": "round",
+                    },
+                }
+            )
+    add_geojson_lines(fmap, features)
 
 
 def add_condition_corridor(fmap, road, direction_key):
+    features = []
     for run in road["condition_runs"][direction_key]:
-        dash = "6,6" if run["label"] == NODATA_LABEL else None
-        folium.PolyLine(
-            run["coords"],
-            color=run["color"],
-            weight=road_overlay_weight(run["label"]),
-            opacity=0.92 if run["label"] != NODATA_LABEL else 0.7,
-            dash_array=dash,
-            line_cap="butt",
-            line_join="round",
-            smooth_factor=1.4,
-        ).add_to(fmap)
+        if len(run["coords"]) < 2:
+            continue
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": to_geojson_line(run["coords"]),
+                },
+                "properties": {
+                    "color": run["color"],
+                    "weight": road_overlay_weight(run["label"]),
+                    "opacity": 0.92 if run["label"] != NODATA_LABEL else 0.7,
+                    "dashArray": "6,6" if run["label"] == NODATA_LABEL else None,
+                    "lineCap": "butt",
+                },
+            }
+        )
+    add_geojson_lines(fmap, features)
+
+
+def add_condition_legend(fmap, percentages, direction_choice):
+    rows = []
+    for _, _, label, color in RSL_CATEGORIES:
+        rows.append(
+            f"""
+            <div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
+                <span style="display:inline-block;width:13px;height:13px;background:{color};"></span>
+                <span>{label} - {percentages.get(label, 0)}%</span>
+            </div>
+            """
+        )
+
+    rows.append(
+        f"""
+        <div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
+            <span style="display:inline-block;width:13px;height:13px;background:{NODATA_COLOR};"></span>
+            <span>{NODATA_LABEL} - {percentages.get(NODATA_LABEL, 0)}%</span>
+        </div>
+        """
+    )
+
+    legend = MacroElement()
+    legend._template = Template(
+        f"""
+        {{% macro html(this, kwargs) %}}
+        <div style="
+            position: fixed;
+            right: 34px;
+            bottom: 38px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(15, 23, 42, 0.18);
+            border-radius: 6px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+            padding: 12px 14px;
+            color: #1f2937;
+            font-family: Inter, Segoe UI, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.2;
+            min-width: 270px;
+        ">
+            <div style="font-weight:700;margin-bottom:7px;">
+                Remaining service life ({direction_choice})
+            </div>
+            {''.join(rows)}
+        </div>
+        {{% endmacro %}}
+        """
+    )
+    fmap.get_root().add_child(legend)
 
 
 def add_plain_road_corridor(fmap, road):
     add_road_casing(fmap, road["plain_paths"])
+    features = []
     for coords in road["plain_paths"]:
-        if len(coords) < 2:
-            continue
-
-        folium.PolyLine(
-            coords,
-            color="#475569",
-            weight=5,
-            opacity=0.82,
-            line_cap="round",
-            line_join="round",
-            smooth_factor=1.25,
-        ).add_to(fmap)
-
-
-def add_road_hit_lines(fmap, features, direction_key, direction_choice, road_label="", show_rsl=True):
-    for feature in features:
-        rsl_label = feature[f"{direction_key}_label"] if show_rsl else "Road segment"
-        tooltip_text = f"km {feature['km']:.0f} | {rsl_label}"
-        if road_label:
-            tooltip_text = f"{road_label} | " + tooltip_text
-
-        folium.PolyLine(
-            feature["coords"],
-            color="#000000",
-            weight=14,
-            opacity=0,
-            fill_opacity=0,
-            line_cap="round",
-            line_join="round",
-            tooltip=tooltip_text,
-            popup=folium.Popup(
-                popup_html(feature, rsl_label, direction_choice),
-                max_width=270,
+        if len(coords) >= 2:
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": to_geojson_line(coords),
+                    },
+                    "properties": {
+                        "color": "#475569",
+                        "weight": 5,
+                        "opacity": 0.82,
+                        "lineCap": "round",
+                    },
+                }
             )
-            if show_rsl
-            else None,
-        ).add_to(fmap)
+    add_geojson_lines(fmap, features)
 
 
 def add_distance_markers(fmap, markers, road_label=""):

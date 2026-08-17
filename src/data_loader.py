@@ -111,6 +111,25 @@ def condition_runs(features, direction_key):
     return runs
 
 
+def condition_percentages(roads, selected_labels, direction_key):
+    totals = {label: 0.0 for _, _, label, _ in RSL_CATEGORIES}
+    totals[NODATA_LABEL] = 0.0
+
+    for label in selected_labels:
+        for feature in roads[label]["features"]:
+            condition_label = feature[f"{direction_key}_label"]
+            totals[condition_label] = totals.get(condition_label, 0.0) + feature["length"]
+
+    total_length = sum(totals.values())
+    if total_length <= 0:
+        return {label: 0 for label in totals}
+
+    return {
+        label: round((length / total_length) * 100)
+        for label, length in totals.items()
+    }
+
+
 def build_distance_markers(gdf):
     if "km" not in gdf.columns or gdf.empty:
         return []
