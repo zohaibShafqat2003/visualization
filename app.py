@@ -215,7 +215,7 @@ with st.sidebar:
         sidebar_legend_rows += (
             f'<div class="condition-key-row">'
             f'<span class="condition-key-line" style="border-top-color:{NODATA_COLOR};border-top-style:dashed;"></span>'
-            f'<span class="condition-key-label">Single carriageway</span></div>'
+            f'<span class="condition-key-label">Single Carriageway</span></div>'
         )
         st.markdown(
             f"""
