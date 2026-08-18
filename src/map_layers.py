@@ -106,7 +106,7 @@ def add_condition_legend(fmap, percentages, direction_choice):
         f"""
         <div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
             <span style="display:inline-block;width:13px;height:13px;background:{NODATA_COLOR};"></span>
-            <span>{NODATA_LABEL} - {percentages.get(NODATA_LABEL, 0)}%</span>
+            <span>Single carriageway - {percentages.get(NODATA_LABEL, 0)}%</span>
         </div>
         """
     )
@@ -132,7 +132,7 @@ def add_condition_legend(fmap, percentages, direction_choice):
             min-width: 270px;
         ">
             <div style="font-weight:700;margin-bottom:7px;">
-                Remaining service life ({direction_choice})
+                Remaining Service Life ({direction_choice})
             </div>
             {''.join(rows)}
         </div>
