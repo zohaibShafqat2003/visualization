@@ -12,6 +12,7 @@ from src.config import (
     RSL_CATEGORIES,
     TRAFFIC_MARKER_BORDER,
     TRAFFIC_MARKER_COLOR,
+    ROAD_DATA_CACHE_VERSION,
 )
 from src.popups import build_counts_popup, format_count, safe_num
 
@@ -154,7 +155,8 @@ def build_distance_markers(gdf):
 
 
 @st.cache_data(show_spinner="Loading road data...", max_entries=4)
-def prepare_road_data(path):
+def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
+    _ = cache_version
     gdf = gpd.read_file(path)
     bounds = tuple(float(value) for value in gdf.total_bounds)
 

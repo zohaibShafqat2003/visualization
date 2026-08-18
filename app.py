@@ -16,6 +16,7 @@ from src.config import (
     NODATA_COLOR,
     NODATA_LABEL,
     ROAD_ID_MAP,
+    ROAD_DATA_CACHE_VERSION,
     RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
@@ -171,7 +172,10 @@ with st.sidebar:
     )
 
     selected_labels = highway_labels if highway_choice == "Both" else [highway_choice]
-    roads = {label: prepare_road_data(available_datasets[label]) for label in selected_labels}
+    roads = {
+        label: prepare_road_data(available_datasets[label], ROAD_DATA_CACHE_VERSION)
+        for label in selected_labels
+    }
 
     missing_files = [name for name in DATASETS if name not in available_datasets]
     if missing_files:

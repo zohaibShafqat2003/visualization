@@ -17,14 +17,15 @@ ROAD_ID_MAP = {
 
 RSL_CATEGORIES = [
     (0, 1, "Very Poor <1 year", "#d73027"),
-    (1, 2, "Poor 1-2 years", "#fc8d59"),
-    (2, 4, "Fair 2-4 years", "#fee08b"),
+    (1, 2, "Poor 1-2 years", "#facc15"),
+    (2, 4, "Fair 2-4 years", "#2563eb"),
     (4, float("inf"), "Good >=4 years", "#1a9850"),
 ]
 
 NODATA_LABEL = "No data"
 NODATA_COLOR = "#888888"
 GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
+ROAD_DATA_CACHE_VERSION = 2
 TRAFFIC_MARKER_COLOR = "#c92a2a"
 TRAFFIC_MARKER_BORDER = "#f1b6b6"
 TRAFFIC_POPUP_CACHE_VERSION = 8
