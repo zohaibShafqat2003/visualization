@@ -221,30 +221,6 @@ st.markdown(
         .stApp[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) * {
             color: #ffffff !important;
         }
-        @media (prefers-color-scheme: dark) {
-            [data-testid="stSidebar"] {
-                background: #111827 !important;
-                border-right: 1px solid #334155 !important;
-            }
-            [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div) {
-                color: #f8fafc !important;
-            }
-            [data-testid="stSidebar"] .condition-key {
-                background: rgba(31, 41, 55, 0.92) !important;
-                border-color: rgba(148, 163, 184, 0.32) !important;
-            }
-            [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]) {
-                background: #111827 !important;
-                border-color: #334155 !important;
-            }
-            [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) {
-                background: #fb4b4b !important;
-                border-color: #fb4b4b !important;
-            }
-            [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) * {
-                color: #ffffff !important;
-            }
-        }
     </style>
     """,
     unsafe_allow_html=True,
