@@ -285,11 +285,13 @@ with st.sidebar:
     )
     distance_marker_interval = 50
     if show_distance_markers:
-        distance_marker_interval = st.selectbox(
+        distance_marker_interval = st.slider(
             "Distance marker interval",
-            [1, 2, 5, 10, 25, 50, 100],
-            index=5,
-            format_func=lambda value: f"Every {value} km",
+            min_value=5,
+            max_value=100,
+            value=50,
+            step=5,
+            format="%d km",
             help="Choose how often kilometer badges appear on the road.",
         )
 
