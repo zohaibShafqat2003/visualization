@@ -194,23 +194,47 @@ def build_distance_markers(gdf):
     if "km" not in gdf.columns or gdf.empty:
         return []
 
-    km_min = float(gdf["km"].min())
-    km_max = float(gdf["km"].max())
+    marker_gdf = gdf[["km", "geometry"]].dropna(subset=["km", "geometry"]).sort_values("km")
+    if marker_gdf.empty:
+        return []
+
+    km_values = marker_gdf["km"].astype(float).to_numpy()
+    km_min = float(km_values[0])
+    km_max = float(km_values[-1])
     if km_max <= km_min:
         return []
 
-    start = int(math.ceil(km_min / 50.0) * 50)
+    start = int(math.ceil(km_min))
     if start == 0:
-        start = 50
+        start = 1
 
     markers = []
-    for target_km in range(start, int(km_max) + 1, 50):
-        idx = (gdf["km"] - target_km).abs().idxmin()
-        row = gdf.loc[idx]
+    for target_km in range(start, int(km_max) + 1):
+        insert_at = km_values.searchsorted(target_km)
+        if insert_at == 0:
+            idx = marker_gdf.index[0]
+        elif insert_at >= len(km_values):
+            idx = marker_gdf.index[-1]
+        else:
+            before_idx = marker_gdf.index[insert_at - 1]
+            after_idx = marker_gdf.index[insert_at]
+            before_delta = abs(km_values[insert_at - 1] - target_km)
+            after_delta = abs(km_values[insert_at] - target_km)
+            idx = before_idx if before_delta <= after_delta else after_idx
+        row = marker_gdf.loc[idx]
         coords = list(row.geometry.coords)
         lon, lat = coords[len(coords) // 2]
         markers.append({"km": target_km, "lat": lat, "lon": lon})
     return markers
+
+
+@st.cache_data(show_spinner=False, max_entries=32)
+def select_distance_markers(markers, interval):
+    return [
+        marker
+        for marker in markers
+        if int(marker["km"]) % int(interval) == 0
+    ]
 
 
 def build_road_data(gdf):

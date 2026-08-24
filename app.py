@@ -28,6 +28,7 @@ from src.data_loader import (
     prepare_n5_road_data,
     prepare_n55_road_data,
     road_status_categories,
+    select_distance_markers,
 )
 from src.map_layers import (
     add_condition_legend,
@@ -280,8 +281,17 @@ with st.sidebar:
     show_distance_markers = st.toggle(
         "Distance markers",
         value=highway_choice != "Both",
-        help="Show road markers every 50 km.",
+        help="Show road kilometer badges at your selected interval.",
     )
+    distance_marker_interval = 50
+    if show_distance_markers:
+        distance_marker_interval = st.selectbox(
+            "Distance marker interval",
+            [1, 2, 5, 10, 25, 50, 100],
+            index=5,
+            format_func=lambda value: f"Every {value} km",
+            help="Choose how often kilometer badges appear on the road.",
+        )
 
     if show_rsl:
         status_categories = road_status_categories(roads, selected_labels, direction_key)
@@ -346,9 +356,13 @@ for label in selected_labels:
         add_plain_road_corridor(m, road)
 
     if show_distance_markers:
+        distance_markers = select_distance_markers(
+            road["distance_markers"],
+            distance_marker_interval,
+        )
         add_distance_markers(
             m,
-            road["distance_markers"],
+            distance_markers,
             road_label=road_label,
         )
 
@@ -372,12 +386,12 @@ with st.container(border=True):
         width=None,
         height=680,
         returned_objects=[],
-        key=f"road-map-{show_counts}",
+        key=f"road-map-{'-'.join(selected_labels)}",
     )
 
 if show_rsl:
     distance_caption = (
-        f"Distance badges appear every 50 km when zoomed in to level {DISTANCE_MARKER_MIN_ZOOM} or closer. "
+        f"Distance badges appear every {distance_marker_interval} km when zoomed in to level {DISTANCE_MARKER_MIN_ZOOM} or closer. "
         if show_distance_markers
         else "Distance markers are hidden. "
     )
@@ -388,7 +402,7 @@ if show_rsl:
     )
 else:
     distance_caption = (
-        f"Distance badges appear every 50 km when zoomed in to level {DISTANCE_MARKER_MIN_ZOOM} or closer."
+        f"Distance badges appear every {distance_marker_interval} km when zoomed in to level {DISTANCE_MARKER_MIN_ZOOM} or closer."
         if show_distance_markers
         else "Distance markers are hidden."
     )
