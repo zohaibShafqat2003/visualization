@@ -276,21 +276,12 @@ with st.sidebar:
 
     direction_choice = st.pills(
         "Direction",
-        ["North bound", "South bound", "Average (both directions)"],
+        ["North bound", "South bound"],
         default="North bound",
         selection_mode="single",
     )
     direction_choice = direction_choice or "North bound"
-    if direction_choice == "Average (both directions)":
-        st.caption(
-            "Averages both lanes; if one lane is missing data, the other lane's "
-            "value is used instead."
-        )
-
-    if direction_choice == "Average (both directions)":
-        direction_key = "average"
-    else:
-        direction_key = "north" if direction_choice == "North bound" else "south"
+    direction_key = "north" if direction_choice == "North bound" else "south"
 
     st.markdown("### Layers")
     show_rsl = st.toggle("Road condition", value=True, help="Color roads by remaining service life.")
@@ -306,11 +297,6 @@ with st.sidebar:
             f'<span class="condition-key-line" style="border-top-color:{color};"></span>'
             f'<span class="condition-key-label">{label}</span></div>'
             for _, _, label, color in RSL_CATEGORIES
-        )
-        sidebar_legend_rows += (
-            f'<div class="condition-key-row">'
-            f'<span class="condition-key-line" style="border-top-color:{NODATA_COLOR};border-top-style:dashed;"></span>'
-            f'<span class="condition-key-label">Single Carriageway</span></div>'
         )
         st.markdown(
             f"""
