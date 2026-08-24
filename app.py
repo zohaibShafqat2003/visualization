@@ -60,21 +60,6 @@ st.markdown(
         .stSelectbox > div, .stRadio > div, .stCheckbox > div {
             border-radius: 10px;
         }
-        [data-testid="stSidebar"] h1,
-        [data-testid="stSidebar"] h2,
-        [data-testid="stSidebar"] h3,
-        [data-testid="stSidebar"] label,
-        [data-testid="stSidebar"] label p,
-        [data-testid="stSidebar"] label span,
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-        [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
-            color: var(--text-color, #0f172a) !important;
-        }
-        [data-testid="stSidebar"] button,
-        [data-testid="stSidebar"] button p,
-        [data-testid="stSidebar"] button span {
-            color: var(--text-color, #0f172a) !important;
-        }
         [data-testid="stSidebar"] button[aria-pressed="true"],
         [data-testid="stSidebar"] button[aria-selected="true"],
         [data-testid="stSidebar"] button[aria-pressed="true"] p,
@@ -84,7 +69,7 @@ st.markdown(
             color: #ffffff !important;
         }
         [data-testid="stSidebar"] .stSegmentedControl > div {
-            background: var(--secondary-background-color, #eef4ff);
+            background: rgba(148, 163, 184, 0.12);
             border-radius: 12px;
             padding: 0.15rem;
         }
@@ -108,14 +93,14 @@ st.markdown(
         .condition-key {
             margin: 0.65rem 0 0.75rem 0;
             padding: 0.75rem 0.85rem;
-            background: var(--secondary-background-color, rgba(255, 255, 255, 0.72));
-            border: 1px solid var(--border-color, rgba(15, 23, 42, 0.14));
+            background: rgba(148, 163, 184, 0.12);
+            border: 1px solid rgba(148, 163, 184, 0.32);
             border-radius: 10px;
         }
         .condition-key-title {
             font-size: 0.78rem;
             font-weight: 700;
-            color: var(--text-color, #475569);
+            color: inherit;
             margin-bottom: 0.45rem;
         }
         .condition-key-row {
@@ -134,7 +119,7 @@ st.markdown(
         }
         .condition-key-label {
             font-size: 0.86rem;
-            color: var(--text-color, #0f172a);
+            color: inherit;
             line-height: 1.2;
         }
         .built-by-watermark {
@@ -159,54 +144,111 @@ st.markdown(
                 max-width: calc(100vw - 1.5rem);
             }
         }
+        [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"],
+        [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"],
+        html[data-baseweb-theme="dark"] [data-testid="stSidebar"],
+        html[data-theme="dark"] [data-testid="stSidebar"],
+        body[data-baseweb-theme="dark"] [data-testid="stSidebar"],
+        body[data-theme="dark"] [data-testid="stSidebar"],
+        [data-baseweb-theme="dark"] [data-testid="stSidebar"],
+        [data-theme="dark"] [data-testid="stSidebar"],
+        .stApp[data-baseweb-theme="dark"] [data-testid="stSidebar"],
+        .stApp[data-theme="dark"] [data-testid="stSidebar"] {
+            background: #111827 !important;
+            border-right: 1px solid #334155 !important;
+        }
+        [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        html[data-baseweb-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        html[data-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        body[data-baseweb-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        body[data-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        [data-baseweb-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        [data-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        .stApp[data-baseweb-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div),
+        .stApp[data-theme="dark"] [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div) {
+            color: #f8fafc !important;
+        }
+        [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        html[data-baseweb-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        html[data-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        body[data-baseweb-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        body[data-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        [data-baseweb-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        [data-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        .stApp[data-baseweb-theme="dark"] [data-testid="stSidebar"] .condition-key,
+        .stApp[data-theme="dark"] [data-testid="stSidebar"] .condition-key {
+            background: rgba(31, 41, 55, 0.92) !important;
+            border-color: rgba(148, 163, 184, 0.32) !important;
+        }
+        [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        html[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        html[data-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        body[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        body[data-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        [data-baseweb-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        [data-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        .stApp[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]),
+        .stApp[data-theme="dark"] [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]) {
+            background: #111827 !important;
+            border-color: #334155 !important;
+        }
+        [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        html[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        html[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        body[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        body[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        [data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        [data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        .stApp[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]),
+        .stApp[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) {
+            background: #fb4b4b !important;
+            border-color: #fb4b4b !important;
+            color: #ffffff !important;
+        }
+        [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        html[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        html[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        body[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        body[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        [data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        [data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        .stApp[data-baseweb-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) *,
+        .stApp[data-theme="dark"] [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) * {
+            color: #ffffff !important;
+        }
+        @media (prefers-color-scheme: dark) {
+            [data-testid="stSidebar"] {
+                background: #111827 !important;
+                border-right: 1px solid #334155 !important;
+            }
+            [data-testid="stSidebar"] :is(h1,h2,h3,p,label,span,div) {
+                color: #f8fafc !important;
+            }
+            [data-testid="stSidebar"] .condition-key {
+                background: rgba(31, 41, 55, 0.92) !important;
+                border-color: rgba(148, 163, 184, 0.32) !important;
+            }
+            [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]) {
+                background: #111827 !important;
+                border-color: #334155 !important;
+            }
+            [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) {
+                background: #fb4b4b !important;
+                border-color: #fb4b4b !important;
+            }
+            [data-testid="stSidebar"] button:is([aria-pressed="true"],[aria-selected="true"]) * {
+                color: #ffffff !important;
+            }
+        }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-theme_context = getattr(getattr(st, "context", None), "theme", None)
-is_dark_theme = getattr(theme_context, "type", "light") == "dark"
-
-if is_dark_theme:
-    st.markdown(
-        """
-        <style>
-            [data-testid="stSidebar"] .condition-key {
-                background: rgba(31, 41, 55, 0.88);
-                border-color: rgba(148, 163, 184, 0.28);
-                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
-            }
-            [data-testid="stSidebar"] .condition-key-title {
-                color: #f8fafc;
-            }
-            [data-testid="stSidebar"] .condition-key-label {
-                color: #e5e7eb;
-            }
-            [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]) {
-                background: rgba(31, 41, 55, 0.92);
-                border: 1px solid rgba(148, 163, 184, 0.28);
-                color: #f8fafc !important;
-            }
-            [data-testid="stSidebar"] button[aria-pressed="true"] {
-                background: #fb4b4b;
-                color: #ffffff;
-                border-color: #fb4b4b;
-            }
-            [data-testid="stSidebar"] button[aria-selected="true"] {
-                background: #fb4b4b;
-                color: #ffffff;
-                border-color: #fb4b4b;
-            }
-            .built-by-watermark {
-                background: rgba(31, 41, 55, 0.90);
-                border-color: rgba(148, 163, 184, 0.28);
-                color: #e5e7eb;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
-            }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
 st.title("Road Condition Map")
 st.caption("Interactive Highway Condition Monitoring")
