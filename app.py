@@ -57,25 +57,34 @@ st.markdown(
             padding-top: 1.5rem;
             padding-bottom: 2rem;
         }
-        [data-testid="stSidebar"], .stSidebar {
-            background: var(--secondary-background-color, #f4f7fb) !important;
-            color: var(--text-color, #0f172a) !important;
-        }
-        [data-testid="stSidebar"] *, .stSidebar * {
-            color: var(--text-color, #0f172a) !important;
-        }
-        .stSidebar .st-bq, .stSidebar .st-emotion-cache-1v0mbdj,
-        [data-testid="stSidebar"] .st-bq, [data-testid="stSidebar"] .st-emotion-cache-1v0mbdj {
-            background: var(--background-color, rgba(255,255,255,0.7));
-            border: 1px solid var(--border-color, rgba(15, 23, 42, 0.08));
-            border-radius: 12px;
-            padding: 0.75rem 0.8rem;
-        }
         .stSelectbox > div, .stRadio > div, .stCheckbox > div {
             border-radius: 10px;
         }
-        .stSegmentedControl > div {
-            background: #eef4ff;
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] label p,
+        [data-testid="stSidebar"] label span,
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+        [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+            color: var(--text-color, #0f172a) !important;
+        }
+        [data-testid="stSidebar"] button,
+        [data-testid="stSidebar"] button p,
+        [data-testid="stSidebar"] button span {
+            color: var(--text-color, #0f172a) !important;
+        }
+        [data-testid="stSidebar"] button[aria-pressed="true"],
+        [data-testid="stSidebar"] button[aria-selected="true"],
+        [data-testid="stSidebar"] button[aria-pressed="true"] p,
+        [data-testid="stSidebar"] button[aria-selected="true"] p,
+        [data-testid="stSidebar"] button[aria-pressed="true"] span,
+        [data-testid="stSidebar"] button[aria-selected="true"] span {
+            color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] .stSegmentedControl > div {
+            background: var(--secondary-background-color, #eef4ff);
             border-radius: 12px;
             padding: 0.15rem;
         }
@@ -99,8 +108,8 @@ st.markdown(
         .condition-key {
             margin: 0.65rem 0 0.75rem 0;
             padding: 0.75rem 0.85rem;
-            background: var(--background-color, rgba(255, 255, 255, 0.58));
-            border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+            background: var(--secondary-background-color, rgba(255, 255, 255, 0.72));
+            border: 1px solid var(--border-color, rgba(15, 23, 42, 0.14));
             border-radius: 10px;
         }
         .condition-key-title {
@@ -130,7 +139,7 @@ st.markdown(
         }
         .built-by-watermark {
             position: fixed;
-            right: 1.25rem;
+            left: max(1rem, 22rem);
             bottom: 0.85rem;
             z-index: 999;
             padding: 0.42rem 0.72rem;
@@ -142,6 +151,13 @@ st.markdown(
             font-size: 0.76rem;
             font-weight: 600;
             backdrop-filter: blur(8px);
+        }
+        @media (max-width: 760px) {
+            .built-by-watermark {
+                left: 0.75rem;
+                right: auto;
+                max-width: calc(100vw - 1.5rem);
+            }
         }
     </style>
     """,
@@ -155,25 +171,8 @@ if is_dark_theme:
     st.markdown(
         """
         <style>
-            [data-testid="stSidebar"], .stSidebar {
-                background: linear-gradient(180deg, #111827 0%, #0f172a 100%) !important;
-                border-right: 1px solid rgba(148, 163, 184, 0.22);
-            }
-            [data-testid="stSidebar"] h1,
-            [data-testid="stSidebar"] h2,
-            [data-testid="stSidebar"] h3,
-            [data-testid="stSidebar"] p,
-            [data-testid="stSidebar"] label,
-            [data-testid="stSidebar"] span,
-            [data-testid="stSidebar"] div {
-                color: #e5e7eb;
-            }
-            [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
-            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-                color: #cbd5e1;
-            }
             [data-testid="stSidebar"] .condition-key {
-                background: rgba(15, 23, 42, 0.82);
+                background: rgba(31, 41, 55, 0.88);
                 border-color: rgba(148, 163, 184, 0.28);
                 box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
             }
@@ -183,20 +182,23 @@ if is_dark_theme:
             [data-testid="stSidebar"] .condition-key-label {
                 color: #e5e7eb;
             }
-            [data-testid="stSidebar"] .stSegmentedControl > div {
-                background: rgba(15, 23, 42, 0.88);
+            [data-testid="stSidebar"] button:not([aria-pressed="true"]):not([aria-selected="true"]) {
+                background: rgba(31, 41, 55, 0.92);
                 border: 1px solid rgba(148, 163, 184, 0.28);
-            }
-            [data-testid="stSidebar"] button {
-                color: #e5e7eb;
+                color: #f8fafc !important;
             }
             [data-testid="stSidebar"] button[aria-pressed="true"] {
                 background: #fb4b4b;
                 color: #ffffff;
                 border-color: #fb4b4b;
             }
+            [data-testid="stSidebar"] button[aria-selected="true"] {
+                background: #fb4b4b;
+                color: #ffffff;
+                border-color: #fb4b4b;
+            }
             .built-by-watermark {
-                background: rgba(15, 23, 42, 0.88);
+                background: rgba(31, 41, 55, 0.90);
                 border-color: rgba(148, 163, 184, 0.28);
                 color: #e5e7eb;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);

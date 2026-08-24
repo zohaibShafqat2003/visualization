@@ -119,14 +119,17 @@ def add_condition_legend(fmap, direction_choice, km_totals, categories):
             z-index: 9999;
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid rgba(15, 23, 42, 0.18);
-            border-radius: 6px;
+            border-radius: 8px;
             box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
-            padding: 12px 14px;
+            padding: 14px 16px;
             color: #1f2937;
             font-family: Inter, Segoe UI, Arial, sans-serif;
             font-size: 14px;
             line-height: 1.2;
             min-width: 320px;
+            max-width: 360px;
+            max-height: 46vh;
+            overflow-y: auto;
         ">
             <div style="font-weight:700;margin-bottom:7px;">
                 Road condition ({direction_choice})
