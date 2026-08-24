@@ -44,9 +44,9 @@ def classify_status(status):
         "pda": "PDA",
         "rigid pavement": "Rigid Pavement",
         "milling": "Under construction",
-        "no data": "No data",
+        "no data": NODATA_LABEL,
     }
-    label = labels.get(normalized, "No data")
+    label = labels.get(normalized, NODATA_LABEL)
     return label, STATUS_CATEGORY_COLORS.get(label, NODATA_COLOR)
 
 

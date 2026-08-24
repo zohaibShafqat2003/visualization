@@ -33,21 +33,21 @@ STATUS_CATEGORY_COLORS = {
     "Poor": "#facc15",
     "Fair": "#2563eb",
     "Good": "#1a9850",
-    "Under construction": "#7c3aed",
-    "Rehabilitation Project": "#f97316",
-    "DLC": "#64748b",
-    "LDA": "#0f766e",
-    "PDA": "#0891b2",
+    "Under construction": "#8E24AA",
+    "Rehabilitation Project": "#795548",
+    "DLC": "#424242",
+    "LDA": "#00897B",
+    "PDA": "#9E9D24",
     "Rigid Pavement": "#475569",
-    "No data": "#888888",
+    "No data/single carriageway": "#BDBDBD",
 }
 
 STATUS_CATEGORY_ORDER = list(STATUS_CATEGORY_COLORS)
 
-NODATA_LABEL = "No data"
-NODATA_COLOR = "#888888"
+NODATA_LABEL = "No data/single carriageway"
+NODATA_COLOR = "#BDBDBD"
 GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
-ROAD_DATA_CACHE_VERSION = 6
+ROAD_DATA_CACHE_VERSION = 7
 TRAFFIC_MARKER_COLOR = "#c92a2a"
 TRAFFIC_MARKER_BORDER = "#f1b6b6"
 TRAFFIC_POPUP_CACHE_VERSION = 9
