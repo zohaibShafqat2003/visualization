@@ -21,6 +21,32 @@ ROAD_ID_MAP = {
     "N-55": "N55",
 }
 
+MAJOR_CITIES = [
+    {"name": "Karachi", "road": "N5", "lat": 24.8607, "lon": 67.0011},
+    {"name": "Hyderabad", "road": "N5", "lat": 25.3960, "lon": 68.3578},
+    {"name": "Moro", "road": "N5", "lat": 26.6652, "lon": 68.0016},
+    {"name": "Sukkur", "road": "N5", "lat": 27.7052, "lon": 68.8574},
+    {"name": "Rahim Yar Khan", "road": "N5", "lat": 28.4212, "lon": 70.2989},
+    {"name": "Bahawalpur", "road": "N5", "lat": 29.3956, "lon": 71.6836},
+    {"name": "Multan", "road": "N5", "lat": 30.1575, "lon": 71.5249},
+    {"name": "Sahiwal", "road": "N5", "lat": 30.6682, "lon": 73.1114},
+    {"name": "Lahore", "road": "N5", "lat": 31.5204, "lon": 74.3587},
+    {"name": "Gujranwala", "road": "N5", "lat": 32.1877, "lon": 74.1945},
+    {"name": "Jhelum", "road": "N5", "lat": 32.9345, "lon": 73.7310},
+    {"name": "Rawalpindi", "road": "N5", "lat": 33.5651, "lon": 73.0169},
+    {"name": "Peshawar", "road": "N5", "lat": 34.0151, "lon": 71.5249},
+    {"name": "Kotri", "road": "N-55", "lat": 25.3660, "lon": 68.3122},
+    {"name": "Sehwan", "road": "N-55", "lat": 26.4242, "lon": 67.8612},
+    {"name": "Dadu", "road": "N-55", "lat": 26.7303, "lon": 67.7769},
+    {"name": "Larkana", "road": "N-55", "lat": 27.5570, "lon": 68.2028},
+    {"name": "Shikarpur", "road": "N-55", "lat": 27.9556, "lon": 68.6382},
+    {"name": "Kandhkot", "road": "N-55", "lat": 28.2457, "lon": 69.1797},
+    {"name": "Dera Ghazi Khan", "road": "N-55", "lat": 30.0561, "lon": 70.6348},
+    {"name": "Dera Ismail Khan", "road": "N-55", "lat": 31.8327, "lon": 70.9024},
+    {"name": "Kohat", "road": "N-55", "lat": 33.5889, "lon": 71.4429},
+    {"name": "Peshawar", "road": "N-55", "lat": 34.0151, "lon": 71.5249},
+]
+
 RSL_CATEGORIES = [
     (0, 1, "Very Poor <1 year", "#d73027"),
     (1, 2, "Poor 1-2 years", "#facc15"),

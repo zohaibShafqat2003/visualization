@@ -216,6 +216,38 @@ def add_distance_marker_zoom_toggle(fmap, min_zoom=DISTANCE_MARKER_MIN_ZOOM):
     fmap.get_root().add_child(zoom_toggle)
 
 
+def add_major_city_markers(fmap, cities):
+    for city in cities:
+        label = city["name"]
+        road_label = city["road"]
+        title_attr = f"{label} ({road_label})"
+        marker_html = (
+            '<div class="major-city-marker" title="' + title_attr + '" style="'
+            "display:flex;align-items:center;gap:5px;white-space:nowrap;"
+            "font-family:Inter,Segoe UI,Arial,sans-serif;transform:translate(-8px,-12px);"
+            '">'
+            '<span style="width:13px;height:13px;border-radius:50%;background:#2563eb;'
+            'border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.35);display:inline-block;"></span>'
+            '<span style="background:rgba(255,255,255,.94);border:1px solid rgba(37,99,235,.24);'
+            'border-radius:999px;padding:2px 7px;color:#0f172a;font-size:11px;font-weight:800;'
+            'box-shadow:0 2px 8px rgba(15,23,42,.16);">'
+            f"{label}"
+            "</span>"
+            "</div>"
+        )
+        popup_html = (
+            "<div style='font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f172a;'>"
+            f"<div style='font-weight:800;font-size:14px;'>{label}</div>"
+            f"<div style='font-size:12px;color:#64748b;margin-top:2px;'>Major city on {road_label}</div>"
+            "</div>"
+        )
+        folium.Marker(
+            [city["lat"], city["lon"]],
+            icon=folium.DivIcon(html=marker_html, icon_size=(140, 24), icon_anchor=(8, 12)),
+            popup=folium.Popup(popup_html, max_width=220),
+        ).add_to(fmap)
+
+
 def add_station_markers(fmap, count_stations):
     for station in count_stations:
         folium.Marker(

@@ -13,6 +13,7 @@ from src.config import (
     COUNTS_PATH,
     DATASETS,
     DISTANCE_MARKER_MIN_ZOOM,
+    MAJOR_CITIES,
     N5_NORTH_PATH,
     N5_SOUTH_PATH,
     N55_GEOMETRY_PATH,
@@ -36,6 +37,7 @@ from src.map_layers import (
     add_condition_corridor,
     add_distance_marker_zoom_toggle,
     add_distance_markers,
+    add_major_city_markers,
     add_plain_road_corridor,
     add_station_markers,
 )
@@ -333,6 +335,11 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
+    show_major_cities = st.toggle(
+        "Major cities",
+        value=False,
+        help="Highlight major cities along the selected highway(s).",
+    )
     show_counts = st.toggle("Traffic count stations", value=False, help="Show traffic count markers for the selected road(s).")
 
     count_stations = []
@@ -391,6 +398,14 @@ for label in selected_labels:
 if count_stations:
     add_station_markers(m, count_stations)
 
+if show_major_cities:
+    city_markers = [
+        city
+        for city in MAJOR_CITIES
+        if city["road"] in selected_labels
+    ]
+    add_major_city_markers(m, city_markers)
+
 if show_rsl:
     add_condition_legend(
         m,
@@ -437,4 +452,6 @@ if count_stations:
         " Traffic count stations are shown as direct map markers. Click a station marker for ADT, "
         "heavy traffic share, and vehicle categories."
     )
+if show_major_cities:
+    caption_text += " Major cities are highlighted along the selected highway route."
 st.caption(caption_text)
