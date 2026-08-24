@@ -20,6 +20,7 @@ from src.config import (
     N55_SOUTH_STATUS_PATH,
     ROAD_ID_MAP,
     ROAD_DATA_CACHE_VERSION,
+    RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
 from src.data_loader import (
@@ -296,17 +297,16 @@ with st.sidebar:
         )
 
     if show_rsl:
-        status_categories = road_status_categories(roads, selected_labels, direction_key)
         sidebar_legend_rows = "".join(
             f'<div class="condition-key-row">'
             f'<span class="condition-key-line" style="border-top-color:{color};"></span>'
             f'<span class="condition-key-label">{label}</span></div>'
-            for label, color in status_categories
+            for _, _, label, color in RSL_CATEGORIES
         )
         st.markdown(
             f"""
             <div class="condition-key">
-                <div class="condition-key-title">Road condition</div>
+                <div class="condition-key-title">Remaining Service Life</div>
                 {sidebar_legend_rows}
             </div>
             """,
