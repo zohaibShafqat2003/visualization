@@ -7,6 +7,7 @@ import os
 
 import folium
 import streamlit as st
+from branca.element import MacroElement, Template
 from streamlit_folium import st_folium
 
 from src.config import (
@@ -20,9 +21,8 @@ from src.config import (
     RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
-from src.data_loader import condition_percentages, prepare_count_stations, prepare_road_data
+from src.data_loader import prepare_count_stations, prepare_road_data
 from src.map_layers import (
-    add_condition_legend,
     add_condition_corridor,
     add_distance_marker_zoom_toggle,
     add_distance_markers,
@@ -145,6 +145,97 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+def condition_kilometers(roads, selected_labels, direction_key):
+    totals = {label: 0.0 for _, _, label, _ in RSL_CATEGORIES}
+    totals[NODATA_LABEL] = 0.0
+
+    for label in selected_labels:
+        features = sorted(roads[label]["features"], key=lambda feature: feature["km"])
+        positive_diffs = [
+            abs(features[index + 1]["km"] - features[index]["km"])
+            for index in range(len(features) - 1)
+            if abs(features[index + 1]["km"] - features[index]["km"]) > 0
+        ]
+        fallback_length = sorted(positive_diffs)[len(positive_diffs) // 2] if positive_diffs else 1.0
+
+        for index, feature in enumerate(features):
+            condition_label = feature[f"{direction_key}_label"]
+            if index < len(features) - 1:
+                segment_length = abs(features[index + 1]["km"] - feature["km"])
+            elif index > 0:
+                segment_length = abs(feature["km"] - features[index - 1]["km"])
+            else:
+                segment_length = feature.get("length_km", fallback_length)
+
+            if segment_length <= 0:
+                segment_length = feature.get("length_km", fallback_length)
+
+            totals[condition_label] = totals.get(condition_label, 0.0) + segment_length
+
+    return totals
+
+
+def format_km(value):
+    if value >= 10:
+        return f"{value:,.0f} km"
+    return f"{value:,.1f} km"
+
+
+def add_condition_legend(fmap, direction_choice, km_totals):
+    rows = []
+    for _, _, label, color in RSL_CATEGORIES:
+        rows.append(
+            f"""
+            <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
+                <span style="display:inline-block;width:13px;height:13px;background:{color};"></span>
+                <span>{label}</span>
+                <span style="font-weight:700;">{format_km(km_totals.get(label, 0.0))}</span>
+            </div>
+            """
+        )
+
+    rows.append(
+        f"""
+        <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
+            <span style="display:inline-block;width:13px;height:13px;background:{NODATA_COLOR};"></span>
+            <span>Single carriageway</span>
+            <span style="font-weight:700;">{format_km(km_totals.get(NODATA_LABEL, 0.0))}</span>
+        </div>
+        """
+    )
+
+    legend = MacroElement()
+    legend._template = Template(
+        f"""
+        {{% macro html(this, kwargs) %}}
+        <div style="
+            position: fixed;
+            right: 34px;
+            bottom: 38px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(15, 23, 42, 0.18);
+            border-radius: 6px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+            padding: 12px 14px;
+            color: #1f2937;
+            font-family: Inter, Segoe UI, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.2;
+            min-width: 320px;
+        ">
+            <div style="font-weight:700;margin-bottom:7px;">
+                Remaining Service Life ({direction_choice})
+            </div>
+            {''.join(rows)}
+        </div>
+        {{% endmacro %}}
+        """
+    )
+    fmap.get_root().add_child(legend)
+
+
 st.markdown(
     """
     <div style='padding:0.35rem 0 1rem 0;'>
@@ -242,10 +333,11 @@ with st.sidebar:
                 for station in prepare_count_stations(COUNTS_PATH, TRAFFIC_POPUP_CACHE_VERSION)
                 if station["road_id"] in wanted_road_ids
             ]
+
             if not count_stations:
                 st.caption("No count stations found for this selection.")
             else:
-                st.caption(f"")
+                st.caption(f"{len(count_stations)} traffic count station(s) shown.")
         else:
             st.warning(f"Counts file not found: {COUNTS_PATH}")
 
@@ -287,8 +379,8 @@ if count_stations:
 if show_rsl:
     add_condition_legend(
         m,
-        condition_percentages(roads, selected_labels, direction_key),
         direction_choice,
+        condition_kilometers(roads, selected_labels, direction_key),
     )
 
 if show_distance_markers:
@@ -300,7 +392,7 @@ with st.container(border=True):
         width=None,
         height=680,
         returned_objects=[],
-        key="road-map",
+        key=f"road-map-{show_counts}",
     )
 
 if show_rsl:
@@ -312,7 +404,7 @@ if show_rsl:
     caption_text = (
         "Grey dashed segments indicate missing data."
         f"{distance_caption}"
-        "The legend shows what share of the displayed road length falls in each condition category."
+        "The legend shows displayed road length by remaining service life category."
     )
 else:
     distance_caption = (

@@ -112,23 +112,46 @@ def condition_runs(features, direction_key):
     return runs
 
 
-def condition_percentages(roads, selected_labels, direction_key):
+def assign_segment_lengths(features):
+    if not features:
+        return features
+
+    positive_diffs = [
+        abs(features[index + 1]["km"] - features[index]["km"])
+        for index in range(len(features) - 1)
+        if abs(features[index + 1]["km"] - features[index]["km"]) > 0
+    ]
+    if positive_diffs:
+        sorted_diffs = sorted(positive_diffs)
+        fallback_length = sorted_diffs[len(sorted_diffs) // 2]
+    else:
+        fallback_length = 1.0
+
+    for index, feature in enumerate(features):
+        if index < len(features) - 1:
+            segment_length = abs(features[index + 1]["km"] - feature["km"])
+        elif index > 0:
+            segment_length = abs(feature["km"] - features[index - 1]["km"])
+        else:
+            segment_length = fallback_length
+
+        if segment_length <= 0:
+            segment_length = fallback_length
+        feature["length_km"] = segment_length
+
+    return features
+
+
+def condition_kilometers(roads, selected_labels, direction_key):
     totals = {label: 0.0 for _, _, label, _ in RSL_CATEGORIES}
     totals[NODATA_LABEL] = 0.0
 
     for label in selected_labels:
         for feature in roads[label]["features"]:
             condition_label = feature[f"{direction_key}_label"]
-            totals[condition_label] = totals.get(condition_label, 0.0) + feature["length"]
+            totals[condition_label] = totals.get(condition_label, 0.0) + feature.get("length_km", 0.0)
 
-    total_length = sum(totals.values())
-    if total_length <= 0:
-        return {label: 0 for label in totals}
-
-    return {
-        label: round((length / total_length) * 100)
-        for label, length in totals.items()
-    }
+    return totals
 
 
 def build_distance_markers(gdf):
@@ -200,6 +223,7 @@ def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
                 "average_color": average_color,
             }
         )
+    assign_segment_lengths(features)
 
     return {
         "bounds": bounds,
@@ -227,11 +251,18 @@ def prepare_count_stations(path, popup_cache_version):
 
         heavy_share = row_data.get("heavy_share")
         adt = safe_num(row_data, "ADT")
+        rd_value = row_data.get("RD")
+        try:
+            rd_km = float(rd_value)
+        except (TypeError, ValueError):
+            rd_km = None
+
         stations.append(
             {
                 "road_id": row_data.get("Road.ID"),
                 "lat": float(geometry.y),
                 "lon": float(geometry.x),
+                "rd_km": rd_km,
                 "color": TRAFFIC_MARKER_COLOR,
                 "border": TRAFFIC_MARKER_BORDER,
                 "heavy_share_text": f"{float(heavy_share) * 100:.1f}%" if pd.notna(heavy_share) else "N/A",

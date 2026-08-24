@@ -17,7 +17,7 @@ def safe_num(row, col):
 
 def build_count_marker_html(station):
     return f"""
-    <div style="position:relative;display:flex;align-items:center;gap:4px;
+    <div class="traffic-count-station-marker" style="position:relative;display:flex;align-items:center;gap:4px;
         font-family:Inter,Segoe UI,Arial,sans-serif;transform:translate(-13px,-13px);">
         <div style="width:22px;height:22px;border-radius:50%;background:#f97316;
             border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.32);

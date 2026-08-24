@@ -90,23 +90,31 @@ def add_condition_corridor(fmap, road, direction_key):
     add_geojson_lines(fmap, features)
 
 
-def add_condition_legend(fmap, percentages, direction_choice):
+def format_km(value):
+    if value >= 10:
+        return f"{value:,.0f} km"
+    return f"{value:,.1f} km"
+
+
+def add_condition_legend(fmap, direction_choice, km_totals):
     rows = []
     for _, _, label, color in RSL_CATEGORIES:
         rows.append(
             f"""
-            <div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
+            <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
                 <span style="display:inline-block;width:13px;height:13px;background:{color};"></span>
-                <span>{label} - {percentages.get(label, 0)}%</span>
+                <span>{label}</span>
+                <span style="font-weight:700;">{format_km(km_totals.get(label, 0.0))}</span>
             </div>
             """
         )
 
     rows.append(
         f"""
-        <div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
+        <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
             <span style="display:inline-block;width:13px;height:13px;background:{NODATA_COLOR};"></span>
-            <span>Single carriageway - {percentages.get(NODATA_LABEL, 0)}%</span>
+            <span>Single carriageway</span>
+            <span style="font-weight:700;">{format_km(km_totals.get(NODATA_LABEL, 0.0))}</span>
         </div>
         """
     )
@@ -129,7 +137,7 @@ def add_condition_legend(fmap, percentages, direction_choice):
             font-family: Inter, Segoe UI, Arial, sans-serif;
             font-size: 14px;
             line-height: 1.2;
-            min-width: 270px;
+            min-width: 320px;
         ">
             <div style="font-weight:700;margin-bottom:7px;">
                 Remaining Service Life ({direction_choice})
