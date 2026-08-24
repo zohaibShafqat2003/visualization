@@ -10,6 +10,8 @@ from src.config import (
     NODATA_LABEL,
     NODATA_SENTINEL,
     RSL_CATEGORIES,
+    STATUS_CATEGORY_COLORS,
+    STATUS_CATEGORY_ORDER,
     TRAFFIC_MARKER_BORDER,
     TRAFFIC_MARKER_COLOR,
     ROAD_DATA_CACHE_VERSION,
@@ -24,6 +26,28 @@ def classify_rsl(value):
         if lo <= value < hi:
             return label, color
     return NODATA_LABEL, NODATA_COLOR
+
+
+def classify_status(status):
+    """Keep the supplied status category and assign it a stable map color."""
+    normalized = str(status).strip().casefold() if pd.notna(status) else ""
+    labels = {
+        "very poor": "Very Poor",
+        "poor": "Poor",
+        "fair": "Fair",
+        "good": "Good",
+        "under construction": "Under construction",
+        "underconstruction": "Under construction",
+        "rehabilitation project": "Rehabilitation Project",
+        "dlc": "DLC",
+        "lda": "LDA",
+        "pda": "PDA",
+        "rigid pavement": "Rigid Pavement",
+        "milling": "Milling",
+        "no data": "No data",
+    }
+    label = labels.get(normalized, "No data")
+    return label, STATUS_CATEGORY_COLORS.get(label, NODATA_COLOR)
 
 
 def is_valid_rsl(value):
@@ -143,8 +167,7 @@ def assign_segment_lengths(features):
 
 
 def condition_kilometers(roads, selected_labels, direction_key):
-    totals = {label: 0.0 for _, _, label, _ in RSL_CATEGORIES}
-    totals[NODATA_LABEL] = 0.0
+    totals = {}
 
     for label in selected_labels:
         for feature in roads[label]["features"]:
@@ -152,6 +175,19 @@ def condition_kilometers(roads, selected_labels, direction_key):
             totals[condition_label] = totals.get(condition_label, 0.0) + feature.get("length_km", 0.0)
 
     return totals
+
+
+def road_status_categories(roads, selected_labels, direction_key):
+    present_labels = {
+        feature[f"{direction_key}_label"]
+        for road_label in selected_labels
+        for feature in roads[road_label]["features"]
+    }
+    ordered_labels = [label for label in STATUS_CATEGORY_ORDER if label in present_labels]
+    return [
+        (label, STATUS_CATEGORY_COLORS.get(label, NODATA_COLOR))
+        for label in ordered_labels
+    ]
 
 
 def build_distance_markers(gdf):
@@ -175,6 +211,60 @@ def build_distance_markers(gdf):
         lon, lat = coords[len(coords) // 2]
         markers.append({"km": target_km, "lat": lat, "lon": lon})
     return markers
+
+
+def build_road_data(gdf):
+    """Turn normalized road geometry and status columns into map-ready features."""
+    bounds = tuple(float(value) for value in gdf.total_bounds)
+
+    if GEOMETRY_SIMPLIFY_TOLERANCE:
+        display_gdf = gdf.copy()
+        display_gdf["geometry"] = display_gdf.geometry.simplify(
+            GEOMETRY_SIMPLIFY_TOLERANCE,
+            preserve_topology=True,
+        )
+    else:
+        display_gdf = gdf
+
+    features = []
+    for row in display_gdf.itertuples(index=False):
+        geometry = row.geometry
+        if geometry is None or geometry.is_empty:
+            continue
+
+        coords = tuple((lat, lon) for lon, lat in geometry.coords)
+        if not coords:
+            continue
+
+        north_status = getattr(row, "status_north", None)
+        south_status = getattr(row, "status_south", None)
+        north_label, north_color = classify_status(north_status)
+        south_label, south_color = classify_status(south_status)
+        features.append(
+            {
+                "km": float(row.km),
+                "coords": coords,
+                "length": float(geometry.length),
+                "north_status": north_status,
+                "north_label": north_label,
+                "north_color": north_color,
+                "south_status": south_status,
+                "south_label": south_label,
+                "south_color": south_color,
+            }
+        )
+
+    assign_segment_lengths(features)
+    return {
+        "bounds": bounds,
+        "features": features,
+        "plain_paths": contiguous_road_paths(features),
+        "condition_runs": {
+            "north": condition_runs(features, "north"),
+            "south": condition_runs(features, "south"),
+        },
+        "distance_markers": build_distance_markers(gdf),
+    }
 
 
 @st.cache_data(show_spinner="Loading road data...", max_entries=4)
@@ -236,6 +326,44 @@ def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
         },
         "distance_markers": build_distance_markers(gdf),
     }
+
+
+@st.cache_data(show_spinner="Loading updated N5 road data...", max_entries=1)
+def prepare_n5_road_data(north_path, south_path, cache_version=ROAD_DATA_CACHE_VERSION):
+    _ = cache_version
+    north = gpd.read_file(north_path).to_crs("EPSG:4326")
+    south = gpd.read_file(south_path).to_crs("EPSG:4326")
+
+    north = north[["km", "status", "geometry"]].rename(columns={"status": "status_north"})
+    south = south[["km", "status", "geometry"]].rename(columns={"status": "status_south"})
+    south_status = south.drop(columns="geometry")
+
+    # Northbound geometry is used where present; the southbound geometry covers
+    # any km values that are available only in the southbound source.
+    combined = north.merge(south_status, on="km", how="outer")
+    south_geometry = south[["km", "geometry"]]
+    combined = combined.merge(south_geometry, on="km", how="left", suffixes=("", "_south"))
+    combined["geometry"] = combined["geometry"].where(
+        combined["geometry"].notna(), combined["geometry_south"]
+    )
+    combined = gpd.GeoDataFrame(combined.drop(columns="geometry_south"), geometry="geometry", crs="EPSG:4326")
+    combined = combined.sort_values("km").reset_index(drop=True)
+    return build_road_data(combined)
+
+
+@st.cache_data(show_spinner="Loading updated N55 road data...", max_entries=1)
+def prepare_n55_road_data(geometry_path, north_status_path, south_status_path, cache_version=ROAD_DATA_CACHE_VERSION):
+    _ = cache_version
+    geometry = gpd.read_file(geometry_path)
+    north_status = pd.read_csv(north_status_path, usecols=["km", "status"])
+    south_status = pd.read_csv(south_status_path, usecols=["km", "status"])
+
+    north_status = north_status.rename(columns={"status": "status_north"})
+    south_status = south_status.rename(columns={"status": "status_south"})
+    combined = geometry[["km", "geometry"]].merge(north_status, on="km", how="left")
+    combined = combined.merge(south_status, on="km", how="left")
+    combined = gpd.GeoDataFrame(combined, geometry="geometry", crs=geometry.crs)
+    return build_road_data(combined)
 
 
 @st.cache_data(show_spinner="Loading traffic count stations...", max_entries=1)

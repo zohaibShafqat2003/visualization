@@ -6,7 +6,6 @@ from src.config import (
     NODATA_COLOR,
     NODATA_LABEL,
     PROBLEM_RSL_LABELS,
-    RSL_CATEGORIES,
 )
 from src.popups import build_count_marker_html
 
@@ -96,9 +95,9 @@ def format_km(value):
     return f"{value:,.1f} km"
 
 
-def add_condition_legend(fmap, direction_choice, km_totals):
+def add_condition_legend(fmap, direction_choice, km_totals, categories):
     rows = []
-    for _, _, label, color in RSL_CATEGORIES:
+    for label, color in categories:
         rows.append(
             f"""
             <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
@@ -108,16 +107,6 @@ def add_condition_legend(fmap, direction_choice, km_totals):
             </div>
             """
         )
-
-    rows.append(
-        f"""
-        <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
-            <span style="display:inline-block;width:13px;height:13px;background:{NODATA_COLOR};"></span>
-            <span>Single carriageway</span>
-            <span style="font-weight:700;">{format_km(km_totals.get(NODATA_LABEL, 0.0))}</span>
-        </div>
-        """
-    )
 
     legend = MacroElement()
     legend._template = Template(
@@ -140,7 +129,7 @@ def add_condition_legend(fmap, direction_choice, km_totals):
             min-width: 320px;
         ">
             <div style="font-weight:700;margin-bottom:7px;">
-                Remaining Service Life ({direction_choice})
+                Road condition ({direction_choice})
             </div>
             {''.join(rows)}
         </div>

@@ -7,22 +7,30 @@ import os
 
 import folium
 import streamlit as st
-from branca.element import MacroElement, Template
 from streamlit_folium import st_folium
 
 from src.config import (
     COUNTS_PATH,
     DATASETS,
     DISTANCE_MARKER_MIN_ZOOM,
-    NODATA_COLOR,
-    NODATA_LABEL,
+    N5_NORTH_PATH,
+    N5_SOUTH_PATH,
+    N55_GEOMETRY_PATH,
+    N55_NORTH_STATUS_PATH,
+    N55_SOUTH_STATUS_PATH,
     ROAD_ID_MAP,
     ROAD_DATA_CACHE_VERSION,
-    RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
-from src.data_loader import prepare_count_stations, prepare_road_data
+from src.data_loader import (
+    condition_kilometers,
+    prepare_count_stations,
+    prepare_n5_road_data,
+    prepare_n55_road_data,
+    road_status_categories,
+)
 from src.map_layers import (
+    add_condition_legend,
     add_condition_corridor,
     add_distance_marker_zoom_toggle,
     add_distance_markers,
@@ -47,12 +55,17 @@ st.markdown(
             padding-top: 1.5rem;
             padding-bottom: 2rem;
         }
-        .stSidebar {
-            background: linear-gradient(180deg, #f4f7fb 0%, #edf3f8 100%);
+        [data-testid="stSidebar"], .stSidebar {
+            background: var(--secondary-background-color, #f4f7fb) !important;
+            color: var(--text-color, #0f172a) !important;
         }
-        .stSidebar .st-bq, .stSidebar .st-emotion-cache-1v0mbdj {
-            background: rgba(255,255,255,0.7);
-            border: 1px solid rgba(15, 23, 42, 0.08);
+        [data-testid="stSidebar"] *, .stSidebar * {
+            color: var(--text-color, #0f172a) !important;
+        }
+        .stSidebar .st-bq, .stSidebar .st-emotion-cache-1v0mbdj,
+        [data-testid="stSidebar"] .st-bq, [data-testid="stSidebar"] .st-emotion-cache-1v0mbdj {
+            background: var(--background-color, rgba(255,255,255,0.7));
+            border: 1px solid var(--border-color, rgba(15, 23, 42, 0.08));
             border-radius: 12px;
             padding: 0.75rem 0.8rem;
         }
@@ -84,14 +97,14 @@ st.markdown(
         .condition-key {
             margin: 0.65rem 0 0.75rem 0;
             padding: 0.75rem 0.85rem;
-            background: rgba(255, 255, 255, 0.58);
-            border: 1px solid rgba(15, 23, 42, 0.12);
+            background: var(--background-color, rgba(255, 255, 255, 0.58));
+            border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
             border-radius: 10px;
         }
         .condition-key-title {
             font-size: 0.78rem;
             font-weight: 700;
-            color: #475569;
+            color: var(--text-color, #475569);
             margin-bottom: 0.45rem;
         }
         .condition-key-row {
@@ -110,7 +123,7 @@ st.markdown(
         }
         .condition-key-label {
             font-size: 0.86rem;
-            color: #0f172a;
+            color: var(--text-color, #0f172a);
             line-height: 1.2;
         }
         .built-by-watermark {
@@ -133,6 +146,64 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+theme_context = getattr(getattr(st, "context", None), "theme", None)
+is_dark_theme = getattr(theme_context, "type", "light") == "dark"
+
+if is_dark_theme:
+    st.markdown(
+        """
+        <style>
+            [data-testid="stSidebar"], .stSidebar {
+                background: linear-gradient(180deg, #111827 0%, #0f172a 100%) !important;
+                border-right: 1px solid rgba(148, 163, 184, 0.22);
+            }
+            [data-testid="stSidebar"] h1,
+            [data-testid="stSidebar"] h2,
+            [data-testid="stSidebar"] h3,
+            [data-testid="stSidebar"] p,
+            [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span,
+            [data-testid="stSidebar"] div {
+                color: #e5e7eb;
+            }
+            [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+                color: #cbd5e1;
+            }
+            [data-testid="stSidebar"] .condition-key {
+                background: rgba(15, 23, 42, 0.82);
+                border-color: rgba(148, 163, 184, 0.28);
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+            }
+            [data-testid="stSidebar"] .condition-key-title {
+                color: #f8fafc;
+            }
+            [data-testid="stSidebar"] .condition-key-label {
+                color: #e5e7eb;
+            }
+            [data-testid="stSidebar"] .stSegmentedControl > div {
+                background: rgba(15, 23, 42, 0.88);
+                border: 1px solid rgba(148, 163, 184, 0.28);
+            }
+            [data-testid="stSidebar"] button {
+                color: #e5e7eb;
+            }
+            [data-testid="stSidebar"] button[aria-pressed="true"] {
+                background: #fb4b4b;
+                color: #ffffff;
+                border-color: #fb4b4b;
+            }
+            .built-by-watermark {
+                background: rgba(15, 23, 42, 0.88);
+                border-color: rgba(148, 163, 184, 0.28);
+                color: #e5e7eb;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.title("Road Condition Map")
 st.caption("Interactive Highway Condition Monitoring")
 
@@ -144,96 +215,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-
-def condition_kilometers(roads, selected_labels, direction_key):
-    totals = {label: 0.0 for _, _, label, _ in RSL_CATEGORIES}
-    totals[NODATA_LABEL] = 0.0
-
-    for label in selected_labels:
-        features = sorted(roads[label]["features"], key=lambda feature: feature["km"])
-        positive_diffs = [
-            abs(features[index + 1]["km"] - features[index]["km"])
-            for index in range(len(features) - 1)
-            if abs(features[index + 1]["km"] - features[index]["km"]) > 0
-        ]
-        fallback_length = sorted(positive_diffs)[len(positive_diffs) // 2] if positive_diffs else 1.0
-
-        for index, feature in enumerate(features):
-            condition_label = feature[f"{direction_key}_label"]
-            if index < len(features) - 1:
-                segment_length = abs(features[index + 1]["km"] - feature["km"])
-            elif index > 0:
-                segment_length = abs(feature["km"] - features[index - 1]["km"])
-            else:
-                segment_length = feature.get("length_km", fallback_length)
-
-            if segment_length <= 0:
-                segment_length = feature.get("length_km", fallback_length)
-
-            totals[condition_label] = totals.get(condition_label, 0.0) + segment_length
-
-    return totals
-
-
-def format_km(value):
-    if value >= 10:
-        return f"{value:,.0f} km"
-    return f"{value:,.1f} km"
-
-
-def add_condition_legend(fmap, direction_choice, km_totals):
-    rows = []
-    for _, _, label, color in RSL_CATEGORIES:
-        rows.append(
-            f"""
-            <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
-                <span style="display:inline-block;width:13px;height:13px;background:{color};"></span>
-                <span>{label}</span>
-                <span style="font-weight:700;">{format_km(km_totals.get(label, 0.0))}</span>
-            </div>
-            """
-        )
-
-    rows.append(
-        f"""
-        <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
-            <span style="display:inline-block;width:13px;height:13px;background:{NODATA_COLOR};"></span>
-            <span>Single carriageway</span>
-            <span style="font-weight:700;">{format_km(km_totals.get(NODATA_LABEL, 0.0))}</span>
-        </div>
-        """
-    )
-
-    legend = MacroElement()
-    legend._template = Template(
-        f"""
-        {{% macro html(this, kwargs) %}}
-        <div style="
-            position: fixed;
-            right: 34px;
-            bottom: 38px;
-            z-index: 9999;
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid rgba(15, 23, 42, 0.18);
-            border-radius: 6px;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
-            padding: 12px 14px;
-            color: #1f2937;
-            font-family: Inter, Segoe UI, Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.2;
-            min-width: 320px;
-        ">
-            <div style="font-weight:700;margin-bottom:7px;">
-                Remaining Service Life ({direction_choice})
-            </div>
-            {''.join(rows)}
-        </div>
-        {{% endmacro %}}
-        """
-    )
-    fmap.get_root().add_child(legend)
 
 
 st.markdown(
@@ -263,10 +244,21 @@ with st.sidebar:
     )
 
     selected_labels = highway_labels if highway_choice == "Both" else [highway_choice]
-    roads = {
-        label: prepare_road_data(available_datasets[label], ROAD_DATA_CACHE_VERSION)
-        for label in selected_labels
-    }
+    roads = {}
+    for label in selected_labels:
+        if label == "N5":
+            roads[label] = prepare_n5_road_data(
+                N5_NORTH_PATH,
+                N5_SOUTH_PATH,
+                ROAD_DATA_CACHE_VERSION,
+            )
+        else:
+            roads[label] = prepare_n55_road_data(
+                N55_GEOMETRY_PATH,
+                N55_NORTH_STATUS_PATH,
+                N55_SOUTH_STATUS_PATH,
+                ROAD_DATA_CACHE_VERSION,
+            )
 
     missing_files = [name for name in DATASETS if name not in available_datasets]
     if missing_files:
@@ -292,16 +284,17 @@ with st.sidebar:
     )
 
     if show_rsl:
+        status_categories = road_status_categories(roads, selected_labels, direction_key)
         sidebar_legend_rows = "".join(
             f'<div class="condition-key-row">'
             f'<span class="condition-key-line" style="border-top-color:{color};"></span>'
             f'<span class="condition-key-label">{label}</span></div>'
-            for _, _, label, color in RSL_CATEGORIES
+            for label, color in status_categories
         )
         st.markdown(
             f"""
             <div class="condition-key">
-                <div class="condition-key-title">Remaining Service Life</div>
+                <div class="condition-key-title">Road condition</div>
                 {sidebar_legend_rows}
             </div>
             """,
@@ -367,6 +360,7 @@ if show_rsl:
         m,
         direction_choice,
         condition_kilometers(roads, selected_labels, direction_key),
+        road_status_categories(roads, selected_labels, direction_key),
     )
 
 if show_distance_markers:
@@ -390,7 +384,7 @@ if show_rsl:
     caption_text = (
         "Grey dashed segments indicate missing data."
         f"{distance_caption}"
-        "The legend shows displayed road length by remaining service life category."
+        "The legend shows displayed road length by supplied status category."
     )
 else:
     distance_caption = (
