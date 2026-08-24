@@ -39,7 +39,6 @@ STATUS_CATEGORY_COLORS = {
     "LDA": "#0f766e",
     "PDA": "#0891b2",
     "Rigid Pavement": "#475569",
-    "Milling": "#a16207",
     "No data": "#888888",
 }
 

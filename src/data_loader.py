@@ -43,7 +43,7 @@ def classify_status(status):
         "lda": "LDA",
         "pda": "PDA",
         "rigid pavement": "Rigid Pavement",
-        "milling": "Milling",
+        "milling": "Under construction",
         "no data": "No data",
     }
     label = labels.get(normalized, "No data")
