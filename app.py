@@ -449,8 +449,8 @@ else:
     )
 if count_stations:
     caption_text += (
-        " Traffic count stations are shown as direct map markers. Click a station marker for ADT, "
-        "heavy traffic share, and vehicle categories."
+        " Traffic count stations group when zoomed out and separate when zoomed in. Click an "
+        "individual station marker for ADT, heavy traffic share, and vehicle categories."
     )
 if show_major_cities:
     caption_text += " Major cities are highlighted along the selected highway route."
