@@ -19,18 +19,22 @@ from src.config import (
     N55_GEOMETRY_PATH,
     N55_NORTH_STATUS_PATH,
     N55_SOUTH_STATUS_PATH,
+    NUMERIC_RSL_PREVIEW_DATASETS,
     ROAD_ID_MAP,
     ROAD_DATA_CACHE_VERSION,
     RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
 from src.data_loader import (
+    build_rsl_categories,
     condition_kilometers,
     prepare_count_stations,
+    prepare_road_data,
     prepare_n5_road_data,
     prepare_n55_road_data,
     road_status_categories,
     select_distance_markers,
+    validate_rsl_thresholds,
 )
 from src.map_layers import (
     add_condition_legend,
@@ -455,3 +459,127 @@ if count_stations:
 if show_major_cities:
     caption_text += " Major cities are highlighted along the selected highway route."
 st.caption(caption_text)
+
+st.markdown("### Criteria preview")
+show_criteria_preview = st.toggle(
+    "Preview different service-life criteria",
+    value=False,
+    help="Run a read-only comparison using the numeric RSL reference files. This does not change the active map or source data.",
+)
+
+if show_criteria_preview:
+    preview_paths = {
+        label: NUMERIC_RSL_PREVIEW_DATASETS[label]
+        for label in selected_labels
+        if os.path.exists(NUMERIC_RSL_PREVIEW_DATASETS.get(label, ""))
+    }
+    missing_preview_paths = [label for label in selected_labels if label not in preview_paths]
+
+    with st.container(border=True):
+        st.caption(
+            "Read-only scenario analysis. The preview uses the separate numeric RSL reference files in "
+            "data/ and does not change the active status-based map or any data files."
+        )
+
+        with st.form("criteria_preview_form", border=False):
+            st.markdown("#### Scenario thresholds")
+            preview_very_poor_end = st.number_input(
+                "Very Poor ends before (years)",
+                min_value=0.5,
+                max_value=100.0,
+                value=1.0,
+                step=0.5,
+            )
+            preview_poor_end = st.number_input(
+                "Poor ends before (years)",
+                min_value=0.5,
+                max_value=100.0,
+                value=3.0,
+                step=0.5,
+            )
+            preview_fair_end = st.number_input(
+                "Fair ends before (years)",
+                min_value=0.5,
+                max_value=100.0,
+                value=4.0,
+                step=0.5,
+            )
+            run_preview = st.form_submit_button("Run preview")
+
+        if missing_preview_paths:
+            st.warning(
+                "Numeric preview data is unavailable for: "
+                + ", ".join(missing_preview_paths)
+                + "."
+            )
+        elif run_preview:
+            scenario_thresholds = (
+                preview_very_poor_end,
+                preview_poor_end,
+                preview_fair_end,
+            )
+            try:
+                validate_rsl_thresholds(scenario_thresholds)
+            except ValueError as error:
+                st.error(str(error))
+            else:
+                baseline_thresholds = (1.0, 3.0, 4.0)
+                baseline_categories = build_rsl_categories(baseline_thresholds)
+                scenario_categories = build_rsl_categories(scenario_thresholds)
+                baseline_roads = {
+                    label: prepare_road_data(
+                        preview_paths[label],
+                        ROAD_DATA_CACHE_VERSION,
+                        baseline_thresholds,
+                    )
+                    for label in selected_labels
+                }
+                scenario_roads = {
+                    label: prepare_road_data(
+                        preview_paths[label],
+                        ROAD_DATA_CACHE_VERSION,
+                        scenario_thresholds,
+                    )
+                    for label in selected_labels
+                }
+                baseline_totals = condition_kilometers(
+                    baseline_roads,
+                    selected_labels,
+                    direction_key,
+                )
+                scenario_totals = condition_kilometers(
+                    scenario_roads,
+                    selected_labels,
+                    direction_key,
+                )
+                baseline_poor_label = baseline_categories[1][2]
+                scenario_poor_label = scenario_categories[1][2]
+                baseline_poor_km = baseline_totals.get(baseline_poor_label, 0.0)
+                scenario_poor_km = scenario_totals.get(scenario_poor_label, 0.0)
+
+                metric_cols = st.columns(3)
+                metric_cols[0].metric("Baseline poor", f"{baseline_poor_km:,.1f} km")
+                metric_cols[1].metric("Scenario poor", f"{scenario_poor_km:,.1f} km")
+                metric_cols[2].metric(
+                    "Change",
+                    f"{scenario_poor_km - baseline_poor_km:+,.1f} km",
+                )
+
+                preview_rows = []
+                for baseline_category, scenario_category in zip(
+                    baseline_categories,
+                    scenario_categories,
+                ):
+                    baseline_label = baseline_category[2]
+                    scenario_label = scenario_category[2]
+                    baseline_km = baseline_totals.get(baseline_label, 0.0)
+                    scenario_km = scenario_totals.get(scenario_label, 0.0)
+                    preview_rows.append(
+                        {
+                            "Category": scenario_label,
+                            "Baseline km": f"{baseline_km:,.1f}",
+                            "Scenario km": f"{scenario_km:,.1f}",
+                            "Change km": f"{scenario_km - baseline_km:+,.1f}",
+                        }
+                    )
+                st.dataframe(preview_rows, hide_index=True, width="stretch")

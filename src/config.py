@@ -14,6 +14,11 @@ N55_GEOMETRY_PATH = os.path.join("data", "segments_N55.gpkg")
 N55_NORTH_STATUS_PATH = os.path.join("New folder", "N55_NB_24.08.26.csv")
 N55_SOUTH_STATUS_PATH = os.path.join("New folder", "N55_SB_24.08.26.csv")
 
+NUMERIC_RSL_PREVIEW_DATASETS = {
+    "N5": os.path.join("data", "segments_N5.gpkg"),
+    "N-55": os.path.join("data", "segments_N55.gpkg"),
+}
+
 COUNTS_PATH = os.path.join("data", "counts_N5_N55.gpkg")
 
 ROAD_ID_MAP = {
