@@ -208,6 +208,14 @@ def road_status_categories(roads, selected_labels, direction_key, numeric_catego
         for feature in roads[road_label]["features"]
     }
 
+    numeric_categories = numeric_categories or next(
+        (
+            roads[label].get("rsl_categories")
+            for label in selected_labels
+            if roads[label].get("numeric_rsl") and roads[label].get("rsl_categories")
+        ),
+        None,
+    )
     if numeric_categories and any(roads[label].get("numeric_rsl") for label in selected_labels):
         category_colors = {
             label: color

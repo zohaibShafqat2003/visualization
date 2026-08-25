@@ -49,8 +49,8 @@ MAJOR_CITIES = [
 
 RSL_CATEGORIES = [
     (0, 1, "Very Poor <1 year", "#d73027"),
-    (1, 2, "Poor 1-2 years", "#facc15"),
-    (2, 4, "Fair 2-4 years", "#2563eb"),
+    (1, 3, "Poor 1-3 years", "#facc15"),
+    (3, 4, "Fair 3-4 years", "#2563eb"),
     (4, float("inf"), "Good >=4 years", "#1a9850"),
 ]
 

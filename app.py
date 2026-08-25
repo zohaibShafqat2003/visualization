@@ -22,18 +22,15 @@ from src.config import (
     ROAD_ID_MAP,
     ROAD_DATA_CACHE_VERSION,
     RSL_CATEGORIES,
-    RSL_DEFAULT_THRESHOLDS,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
 from src.data_loader import (
-    build_rsl_categories,
     condition_kilometers,
     prepare_count_stations,
     prepare_n5_road_data,
     prepare_n55_road_data,
     road_status_categories,
     select_distance_markers,
-    validate_rsl_thresholds,
 )
 from src.map_layers import (
     add_condition_legend,
@@ -231,8 +228,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.session_state.setdefault("rsl_thresholds", RSL_DEFAULT_THRESHOLDS)
-
 st.title("Road Condition Map")
 st.caption("Interactive Highway Condition Monitoring")
 
@@ -324,59 +319,11 @@ with st.sidebar:
         )
 
     if show_rsl:
-        numeric_rsl_available = any(
-            roads[label].get("numeric_rsl", False)
-            for label in selected_labels
-        )
-        if numeric_rsl_available:
-            with st.form("rsl_criteria", border=True):
-                st.markdown("#### Remaining Service Life criteria")
-                very_poor_end = st.number_input(
-                    "Very Poor ends before (years)",
-                    min_value=0.5,
-                    max_value=100.0,
-                    value=float(st.session_state.rsl_thresholds[0]),
-                    step=0.5,
-                )
-                poor_end = st.number_input(
-                    "Poor ends before (years)",
-                    min_value=0.5,
-                    max_value=100.0,
-                    value=float(st.session_state.rsl_thresholds[1]),
-                    step=0.5,
-                )
-                fair_end = st.number_input(
-                    "Fair ends before (years)",
-                    min_value=0.5,
-                    max_value=100.0,
-                    value=float(st.session_state.rsl_thresholds[2]),
-                    step=0.5,
-                )
-                apply_criteria = st.form_submit_button("Apply criteria")
-
-            if apply_criteria:
-                next_thresholds = (very_poor_end, poor_end, fair_end)
-                try:
-                    st.session_state.rsl_thresholds = validate_rsl_thresholds(next_thresholds)
-                    st.rerun()
-                except ValueError as error:
-                    st.error(str(error))
-        else:
-            st.caption(
-                "Numeric Remaining Service Life criteria are unavailable for the selected source; "
-                "supplied status labels remain authoritative."
-            )
-
-        sidebar_categories = (
-            build_rsl_categories(st.session_state.rsl_thresholds)
-            if numeric_rsl_available
-            else RSL_CATEGORIES
-        )
         sidebar_legend_rows = "".join(
             f'<div class="condition-key-row">'
             f'<span class="condition-key-line" style="border-top-color:{color};"></span>'
             f'<span class="condition-key-label">{label}</span></div>'
-            for _, _, label, color in sidebar_categories
+            for _, _, label, color in RSL_CATEGORIES
         )
         st.markdown(
             f"""
@@ -460,17 +407,11 @@ if show_major_cities:
     add_major_city_markers(m, city_markers)
 
 if show_rsl:
-    numeric_rsl_categories = build_rsl_categories(st.session_state.rsl_thresholds)
     add_condition_legend(
         m,
         direction_choice,
         condition_kilometers(roads, selected_labels, direction_key),
-        road_status_categories(
-            roads,
-            selected_labels,
-            direction_key,
-            numeric_categories=numeric_rsl_categories,
-        ),
+        road_status_categories(roads, selected_labels, direction_key),
     )
 
 if show_distance_markers:
