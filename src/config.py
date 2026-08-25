@@ -54,6 +54,9 @@ RSL_CATEGORIES = [
     (4, float("inf"), "Good >=4 years", "#1a9850"),
 ]
 
+RSL_DEFAULT_THRESHOLDS = (1.0, 3.0, 4.0)
+RSL_COLORS = ("#d73027", "#facc15", "#2563eb", "#1a9850")
+
 STATUS_CATEGORY_COLORS = {
     "Very Poor": "#d73027",
     "Poor": "#facc15",

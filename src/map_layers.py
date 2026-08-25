@@ -14,7 +14,7 @@ from src.popups import build_count_marker_html
 def road_overlay_weight(rsl_label):
     if rsl_label == NODATA_LABEL:
         return 4
-    if rsl_label in PROBLEM_RSL_LABELS:
+    if rsl_label in PROBLEM_RSL_LABELS or rsl_label.startswith(("Very Poor", "Poor")):
         return 7
     return 6
 

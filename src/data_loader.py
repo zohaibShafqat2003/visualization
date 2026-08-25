@@ -9,7 +9,9 @@ from src.config import (
     NODATA_COLOR,
     NODATA_LABEL,
     NODATA_SENTINEL,
+    RSL_COLORS,
     RSL_CATEGORIES,
+    RSL_DEFAULT_THRESHOLDS,
     STATUS_CATEGORY_COLORS,
     STATUS_CATEGORY_ORDER,
     TRAFFIC_MARKER_BORDER,
@@ -19,10 +21,32 @@ from src.config import (
 from src.popups import build_counts_popup, format_count, safe_num
 
 
-def classify_rsl(value):
+def validate_rsl_thresholds(thresholds):
+    values = tuple(float(value) for value in thresholds)
+    if len(values) != 3 or not (0 < values[0] < values[1] < values[2]):
+        raise ValueError("RSL thresholds must satisfy 0 < very poor < poor < fair.")
+    return values
+
+
+def build_rsl_categories(thresholds=RSL_DEFAULT_THRESHOLDS):
+    very_poor_end, poor_end, fair_end = validate_rsl_thresholds(thresholds)
+
+    def year_word(value):
+        return "year" if value == 1 else "years"
+
+    return [
+        (0, very_poor_end, f"Very Poor <{very_poor_end:g} {year_word(very_poor_end)}", RSL_COLORS[0]),
+        (very_poor_end, poor_end, f"Poor {very_poor_end:g}-{poor_end:g} years", RSL_COLORS[1]),
+        (poor_end, fair_end, f"Fair {poor_end:g}-{fair_end:g} years", RSL_COLORS[2]),
+        (fair_end, float("inf"), f"Good >={fair_end:g} years", RSL_COLORS[3]),
+    ]
+
+
+def classify_rsl(value, categories=None):
     if value == NODATA_SENTINEL:
         return NODATA_LABEL, NODATA_COLOR
-    for lo, hi, label, color in RSL_CATEGORIES:
+    categories = categories or build_rsl_categories()
+    for lo, hi, label, color in categories:
         if lo <= value < hi:
             return label, color
     return NODATA_LABEL, NODATA_COLOR
@@ -177,12 +201,25 @@ def condition_kilometers(roads, selected_labels, direction_key):
     return totals
 
 
-def road_status_categories(roads, selected_labels, direction_key):
+def road_status_categories(roads, selected_labels, direction_key, numeric_categories=None):
     present_labels = {
         feature[f"{direction_key}_label"]
         for road_label in selected_labels
         for feature in roads[road_label]["features"]
     }
+
+    if numeric_categories and any(roads[label].get("numeric_rsl") for label in selected_labels):
+        category_colors = {
+            label: color
+            for _, _, label, color in numeric_categories
+        }
+        category_colors[NODATA_LABEL] = NODATA_COLOR
+        return [
+            (label, category_colors[label])
+            for _, _, label, _ in numeric_categories
+            if label in present_labels
+        ] + ([(NODATA_LABEL, NODATA_COLOR)] if NODATA_LABEL in present_labels else [])
+
     ordered_labels = [label for label in STATUS_CATEGORY_ORDER if label in present_labels]
     return [
         (label, STATUS_CATEGORY_COLORS.get(label, NODATA_COLOR))
@@ -237,7 +274,7 @@ def select_distance_markers(markers, interval):
     ]
 
 
-def build_road_data(gdf):
+def build_road_data(gdf, numeric_rsl=False):
     """Turn normalized road geometry and status columns into map-ready features."""
     bounds = tuple(float(value) for value in gdf.total_bounds)
 
@@ -281,6 +318,7 @@ def build_road_data(gdf):
     assign_segment_lengths(features)
     return {
         "bounds": bounds,
+        "numeric_rsl": numeric_rsl,
         "features": features,
         "plain_paths": contiguous_road_paths(features),
         "condition_runs": {
@@ -291,9 +329,10 @@ def build_road_data(gdf):
     }
 
 
-@st.cache_data(show_spinner="Loading road data...", max_entries=4)
-def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
+@st.cache_data(show_spinner="Loading road data...", max_entries=8)
+def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION, rsl_thresholds=RSL_DEFAULT_THRESHOLDS):
     _ = cache_version
+    rsl_categories = build_rsl_categories(rsl_thresholds)
     gdf = gpd.read_file(path)
     bounds = tuple(float(value) for value in gdf.total_bounds)
 
@@ -319,9 +358,9 @@ def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
         north_value = row.remaining_service_life_north
         south_value = row.remaining_service_life_south
         average_value = average_rsl_value(north_value, south_value)
-        north_label, north_color = classify_rsl(north_value)
-        south_label, south_color = classify_rsl(south_value)
-        average_label, average_color = classify_rsl(average_value)
+        north_label, north_color = classify_rsl(north_value, rsl_categories)
+        south_label, south_color = classify_rsl(south_value, rsl_categories)
+        average_label, average_color = classify_rsl(average_value, rsl_categories)
         features.append(
             {
                 "km": float(row.km),
@@ -341,6 +380,8 @@ def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
 
     return {
         "bounds": bounds,
+        "numeric_rsl": True,
+        "rsl_categories": rsl_categories,
         "features": features,
         "plain_paths": contiguous_road_paths(features),
         "condition_runs": {
