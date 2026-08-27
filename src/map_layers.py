@@ -1,5 +1,6 @@
 import folium
 from folium.plugins import MarkerCluster
+from folium.utilities import JsCode
 from branca.element import MacroElement, Template
 
 from src.config import (
@@ -253,45 +254,49 @@ def add_station_markers(fmap, count_stations):
     if not count_stations:
         return
 
-    cluster_icon = """
+    representative_icon = """
     function(cluster) {
-        var count = cluster.getChildCount();
-        var size = count < 10 ? 34 : (count < 100 ? 40 : 46);
-        var fontSize = count < 100 ? 13 : 12;
-        return L.divIcon({
-            className: 'traffic-count-cluster',
-            html: '<div style="width:' + size + 'px;height:' + size + 'px;'
-                + 'border-radius:50%;background:#f97316;border:3px solid white;'
-                + 'box-shadow:0 2px 8px rgba(15,23,42,.32);display:flex;'
-                + 'align-items:center;justify-content:center;color:white;'
-                + 'font-family:Inter,Segoe UI,Arial,sans-serif;font-size:'
-                + fontSize + 'px;font-weight:800;">' + count + '</div>',
-            iconSize: new L.Point(size, size),
-            iconAnchor: new L.Point(size / 2, size / 2)
+        var markers = cluster.getAllChildMarkers().slice().sort(function(a, b) {
+            return (a.options.stationOrder || 0) - (b.options.stationOrder || 0);
         });
+        return markers[0].options.icon;
     }
     """
+    cluster_radius = JsCode(
+        """
+        function(zoom) {
+            if (zoom <= 6) return 96;
+            if (zoom === 7) return 80;
+            if (zoom === 8) return 64;
+            if (zoom === 9) return 48;
+            if (zoom === 10) return 32;
+            return 0;
+        }
+        """
+    )
     station_cluster = MarkerCluster(
         name="Traffic count stations",
-        icon_create_function=cluster_icon,
+        icon_create_function=representative_icon,
         options={
-            "maxClusterRadius": 48,
+            "maxClusterRadius": cluster_radius,
             "disableClusteringAtZoom": 11,
             "showCoverageOnHover": False,
             "zoomToBoundsOnClick": True,
-            "spiderfyOnMaxZoom": True,
+            "spiderfyOnMaxZoom": False,
             "removeOutsideVisibleBounds": True,
             "animate": True,
         },
     ).add_to(fmap)
 
-    for station in count_stations:
+    for station_order, station in enumerate(count_stations):
         folium.Marker(
             location=[station["lat"], station["lon"]],
             icon=folium.DivIcon(
                 html=build_count_marker_html(station),
                 icon_size=(76, 34),
                 icon_anchor=(12, 12),
+                class_name="traffic-count-station-icon",
             ),
             popup=folium.Popup(station["popup"], max_width=300),
+            stationOrder=station_order,
         ).add_to(station_cluster)
