@@ -368,12 +368,22 @@ center_lat = (miny + maxy) / 2
 center_lon = (minx + maxx) / 2
 zoom_start = 6 if len(selected_labels) > 1 else 7
 
+carto_key = st.secrets["CARTO_API_KEY"]
+
 m = folium.Map(
     location=[center_lat, center_lon],
     zoom_start=zoom_start,
-    tiles="CartoDB positron",
+    tiles=None,
     control_scale=True,
 )
+
+folium.TileLayer(
+    tiles=f"https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}.png?key={carto_key}",
+    attr="&copy; OpenStreetMap contributors &copy; CARTO",
+    name="CARTO Positron",
+    subdomains="abcd",
+    max_zoom=20,
+).add_to(m)
 
 for label in selected_labels:
     road = roads[label]
