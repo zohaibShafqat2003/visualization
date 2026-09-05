@@ -43,6 +43,9 @@ from src.map_layers import (
 )
 
 
+EXCLUDED_COUNT_STATION_ADTS = {"4,630"}
+
+
 st.set_page_config(
     page_title="Road Condition Map",
     page_icon=":material/map:",
@@ -350,6 +353,7 @@ with st.sidebar:
                 station
                 for station in prepare_count_stations(COUNTS_PATH, TRAFFIC_POPUP_CACHE_VERSION)
                 if station["road_id"] in wanted_road_ids
+                and station["adt_text"] not in EXCLUDED_COUNT_STATION_ADTS
             ]
 
             if not count_stations:
