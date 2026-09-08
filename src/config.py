@@ -4,15 +4,10 @@ import os
 NODATA_SENTINEL = -99
 
 DATASETS = {
-    "N5": os.path.join("New folder", "sf_north1.gpkg"),
-    "N-55": os.path.join("data", "segments_N55.gpkg"),
+    "N5": os.path.join("data", "segments_N5.gpkg"),
+    "N-55": os.path.join("data", "segments_N55_manual_final.gpkg"),
 }
 
-N5_NORTH_PATH = os.path.join("New folder", "sf_north1.gpkg")
-N5_SOUTH_PATH = os.path.join("New folder", "sf_south1.gpkg")
-N55_GEOMETRY_PATH = os.path.join("data", "segments_N55.gpkg")
-N55_NORTH_STATUS_PATH = os.path.join("New folder", "N55_NB_24.08.26.csv")
-N55_SOUTH_STATUS_PATH = os.path.join("New folder", "N55_SB_24.08.26.csv")
 
 COUNTS_PATH = os.path.join("data", "counts_N5_N55.gpkg")
 
@@ -73,7 +68,7 @@ STATUS_CATEGORY_ORDER = list(STATUS_CATEGORY_COLORS)
 NODATA_LABEL = "No data/single carriageway"
 NODATA_COLOR = "#BDBDBD"
 GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
-ROAD_DATA_CACHE_VERSION = 8
+ROAD_DATA_CACHE_VERSION = 10
 TRAFFIC_MARKER_COLOR = "#c92a2a"
 TRAFFIC_MARKER_BORDER = "#f1b6b6"
 TRAFFIC_POPUP_CACHE_VERSION = 9

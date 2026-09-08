@@ -14,11 +14,6 @@ from src.config import (
     DATASETS,
     DISTANCE_MARKER_MIN_ZOOM,
     MAJOR_CITIES,
-    N5_NORTH_PATH,
-    N5_SOUTH_PATH,
-    N55_GEOMETRY_PATH,
-    N55_NORTH_STATUS_PATH,
-    N55_SOUTH_STATUS_PATH,
     ROAD_ID_MAP,
     ROAD_DATA_CACHE_VERSION,
     RSL_CATEGORIES,
@@ -27,8 +22,7 @@ from src.config import (
 from src.data_loader import (
     condition_kilometers,
     prepare_count_stations,
-    prepare_n5_road_data,
-    prepare_n55_road_data,
+    prepare_condition_road_data,
     road_status_categories,
     select_distance_markers,
 )
@@ -273,19 +267,9 @@ with st.sidebar:
     selected_labels = highway_labels if highway_choice == "Both" else [highway_choice]
     roads = {}
     for label in selected_labels:
-        if label == "N5":
-            roads[label] = prepare_n5_road_data(
-                N5_NORTH_PATH,
-                N5_SOUTH_PATH,
-                ROAD_DATA_CACHE_VERSION,
-            )
-        else:
-            roads[label] = prepare_n55_road_data(
-                N55_GEOMETRY_PATH,
-                N55_NORTH_STATUS_PATH,
-                N55_SOUTH_STATUS_PATH,
-                ROAD_DATA_CACHE_VERSION,
-            )
+        roads[label] = prepare_condition_road_data(
+            available_datasets[label], ROAD_DATA_CACHE_VERSION,
+        )
 
     missing_files = [name for name in DATASETS if name not in available_datasets]
     if missing_files:

@@ -352,6 +352,16 @@ def prepare_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
     }
 
 
+@st.cache_data(show_spinner="Loading road condition data...", max_entries=4)
+def prepare_condition_road_data(path, cache_version=ROAD_DATA_CACHE_VERSION):
+    _ = cache_version
+    gdf = gpd.read_file(path).to_crs("EPSG:4326")
+    required = {"km", "status_north", "status_south", "geometry"}
+    if not required.issubset(gdf.columns):
+        raise ValueError("Road data is not prepared. Run python scripts/prepare_data.py")
+    return build_road_data(gdf.sort_values("km").reset_index(drop=True))
+
+
 @st.cache_data(show_spinner="Loading updated N5 road data...", max_entries=1)
 def prepare_n5_road_data(north_path, south_path, cache_version=ROAD_DATA_CACHE_VERSION):
     _ = cache_version
