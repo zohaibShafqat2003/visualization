@@ -10,6 +10,7 @@ DATASETS = {
 
 
 COUNTS_PATH = os.path.join("data", "counts_N5_N55.gpkg")
+ETTM_COUNTS_PATH = os.path.join("data", "traffic_counts_rauf_10.09.26.csv")
 
 ROAD_ID_MAP = {
     "N5": "N-5",
@@ -50,6 +51,8 @@ RSL_CATEGORIES = [
 ]
 
 STATUS_CATEGORY_COLORS = {
+    "iRAP": "#0891b2",
+    "AIB": "#db2777",
     "Very Poor": "#d73027",
     "Poor": "#facc15",
     "Fair": "#2563eb",
@@ -68,7 +71,7 @@ STATUS_CATEGORY_ORDER = list(STATUS_CATEGORY_COLORS)
 NODATA_LABEL = "No data/single carriageway"
 NODATA_COLOR = "#BDBDBD"
 GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
-ROAD_DATA_CACHE_VERSION = 10
+ROAD_DATA_CACHE_VERSION = 11
 TRAFFIC_MARKER_COLOR = "#c92a2a"
 TRAFFIC_MARKER_BORDER = "#f1b6b6"
 TRAFFIC_POPUP_CACHE_VERSION = 9

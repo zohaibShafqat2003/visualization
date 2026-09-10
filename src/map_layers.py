@@ -288,7 +288,16 @@ def add_station_markers(fmap, count_stations):
         },
     ).add_to(fmap)
 
-    for station_order, station in enumerate(count_stations):
+    # Keep collocated records accessible in one popup (e.g. Chenab NB/SB).
+    station_groups = {}
+    for station in count_stations:
+        station_groups.setdefault((station["lat"], station["lon"]), []).append(station)
+    for station_order, group in enumerate(station_groups.values()):
+        station = dict(group[0])
+        station["popup"] = "<hr>".join(item["popup"] for item in group)
+        station["adt_compact"] = " / ".join(item["adt_compact"] for item in group)
+        if any(item.get("label") == "ETTM Toll Plaza" for item in group):
+            station["label"] = "ETTM Toll Plaza"
         folium.Marker(
             location=[station["lat"], station["lon"]],
             icon=folium.DivIcon(

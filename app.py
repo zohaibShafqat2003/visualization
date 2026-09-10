@@ -7,22 +7,23 @@ import os
 
 import folium
 import streamlit as st
+from src.route_section import prepare_n5_section, points_in_section
 from streamlit_folium import st_folium
 
 from src.config import (
     COUNTS_PATH,
+    ETTM_COUNTS_PATH,
     DATASETS,
     DISTANCE_MARKER_MIN_ZOOM,
     MAJOR_CITIES,
     ROAD_ID_MAP,
-    ROAD_DATA_CACHE_VERSION,
     RSL_CATEGORIES,
     TRAFFIC_POPUP_CACHE_VERSION,
 )
 from src.data_loader import (
     condition_kilometers,
     prepare_count_stations,
-    prepare_condition_road_data,
+    prepare_ettm_stations,
     road_status_categories,
     select_distance_markers,
 )
@@ -226,7 +227,7 @@ st.markdown(
 )
 
 st.title("Road Condition Map")
-st.caption("Interactive Highway Condition Monitoring")
+st.caption("N5 · Multan to Peshawar")
 
 st.markdown(
     """
@@ -250,30 +251,18 @@ st.markdown(
 with st.sidebar:
     st.markdown("### Controls")
 
-    available_datasets = {name: path for name, path in DATASETS.items() if os.path.exists(path)}
+    available_datasets = {name: path for name, path in DATASETS.items() if name == "N5" and os.path.exists(path)}
     if not available_datasets:
         st.error("No dataset files found. Place the .gpkg files in a subfolder named 'data'")
         st.stop()
 
-    highway_labels = list(available_datasets.keys())
-    highway_options = ["Both"] + highway_labels if len(highway_labels) > 1 else highway_labels
-    highway_choice = st.segmented_control(
-        "Highway",
-        options=highway_options,
-        default="Both" if len(highway_options) > 1 else highway_labels[0],
-        selection_mode="single",
+    st.caption("N5 · Multan to Peshawar")
+    selected_labels = ["N5"]
+    section, n5_network, section_limits = prepare_n5_section(
+        available_datasets["N5"],
+        cache_version=(11, os.stat(available_datasets["N5"]).st_mtime_ns),
     )
-
-    selected_labels = highway_labels if highway_choice == "Both" else [highway_choice]
-    roads = {}
-    for label in selected_labels:
-        roads[label] = prepare_condition_road_data(
-            available_datasets[label], ROAD_DATA_CACHE_VERSION,
-        )
-
-    missing_files = [name for name in DATASETS if name not in available_datasets]
-    if missing_files:
-        st.caption(f"Not found: {', '.join(missing_files)}")
+    roads = {"N5": section}
 
     st.markdown("### Display options")
 
@@ -290,7 +279,7 @@ with st.sidebar:
     show_rsl = st.toggle("Road condition", value=True, help="Color roads by remaining service life.")
     show_distance_markers = st.toggle(
         "Distance markers",
-        value=highway_choice != "Both",
+        value=True,
         help="Show road kilometer badges at your selected interval.",
     )
     distance_marker_interval = 50
@@ -340,12 +329,20 @@ with st.sidebar:
                 and station["adt_text"] not in EXCLUDED_COUNT_STATION_ADTS
             ]
 
-            if not count_stations:
-                st.caption("No count stations found for this selection.")
-            else:
-                st.caption(f"{len(count_stations)} traffic count station(s) shown.")
         else:
             st.warning(f"Counts file not found: {COUNTS_PATH}")
+        if "N5" in selected_labels:
+            if os.path.exists(ETTM_COUNTS_PATH):
+                count_stations.extend(prepare_ettm_stations(
+                    ETTM_COUNTS_PATH, os.stat(ETTM_COUNTS_PATH).st_mtime_ns
+                ))
+            else:
+                st.warning(f"ETTM counts file not found: {ETTM_COUNTS_PATH}")
+        count_stations = points_in_section(count_stations, n5_network, section_limits)
+        if count_stations:
+            st.caption(f"{len(count_stations)} traffic count station(s) shown.")
+        else:
+            st.caption("No count stations found for this selection.")
 
 bounds_list = [roads[label]["bounds"] for label in selected_labels]
 minx = min(b[0] for b in bounds_list)
@@ -372,6 +369,8 @@ folium.TileLayer(
     subdomains="abcd",
     max_zoom=20,
 ).add_to(m)
+
+m.fit_bounds([[miny, minx], [maxy, maxx]], padding=(24, 24))
 
 for label in selected_labels:
     road = roads[label]
@@ -402,7 +401,7 @@ if show_major_cities:
         for city in MAJOR_CITIES
         if city["road"] in selected_labels
     ]
-    add_major_city_markers(m, city_markers)
+    add_major_city_markers(m, points_in_section(city_markers, n5_network, section_limits))
 
 if show_rsl:
     add_condition_legend(
@@ -421,7 +420,7 @@ with st.container(border=True):
         width=None,
         height=680,
         returned_objects=[],
-        key=f"road-map-{'-'.join(selected_labels)}",
+        key="road-map-N5-Multan-Peshawar",
     )
 
 if show_rsl:

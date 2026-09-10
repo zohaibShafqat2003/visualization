@@ -14,6 +14,14 @@ DATA = ROOT / "data"
 FIELDS = ["km", "status_north", "status_south", "geometry"]
 
 
+def apply_n5_conditions(frame):
+    overrides = json.loads((DATA / "n5_condition_overrides.json").read_text(encoding="utf-8"))
+    for section in overrides:
+        mask = frame.km.between(section["start_km"], section["end_km"])
+        frame.loc[mask, ["status_north", "status_south"]] = section["label"]
+    return frame
+
+
 def digest(path):
     with open(path, "rb") as source:
         return hashlib.file_digest(source, "sha256").hexdigest()
@@ -100,7 +108,7 @@ def main():
         report[f"N5_unmatched_{direction}_status_km"] = sorted(set(source.km) - set(n5.km))
         n5 = n5.merge(source[["km", "status"]].rename(columns={"status": f"status_{direction}"}),
                       on="km", how="left", validate="one_to_one")
-    n5 = n5[FIELDS]
+    n5 = apply_n5_conditions(n5[FIELDS].copy())
     report["N5_direction_only_km"] = {
         "north": sorted(set(north.km) - set(south.km)),
         "south": sorted(set(south.km) - set(north.km)),

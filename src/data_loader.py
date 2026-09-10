@@ -16,7 +16,7 @@ from src.config import (
     TRAFFIC_MARKER_COLOR,
     ROAD_DATA_CACHE_VERSION,
 )
-from src.popups import build_counts_popup, format_count, safe_num
+from src.popups import build_counts_popup, build_ettm_popup, format_count, safe_num
 
 
 def classify_rsl(value):
@@ -32,6 +32,8 @@ def classify_status(status):
     """Keep the supplied status category and assign it a stable map color."""
     normalized = str(status).strip().casefold() if pd.notna(status) else ""
     labels = {
+        "irap": "iRAP",
+        "aib": "AIB",
         "very poor": "Very Poor",
         "poor": "Poor",
         "fair": "Fair",
@@ -433,4 +435,37 @@ def prepare_count_stations(path, popup_cache_version):
                 "popup": build_counts_popup(row_data),
             }
         )
+    return stations
+
+
+@st.cache_data(show_spinner="Loading ETTM toll plazas...", max_entries=2)
+def prepare_ettm_stations(path, file_mtime, popup_cache_version=3):
+    """Read the supplied daily counts; pandas names the second Total as Total.1."""
+    frame = pd.read_csv(path, dtype=str)
+    frame.columns = frame.columns.str.strip()
+    categories = ["Cars", "Wagon/Jeep", "Bus", "2/3 axles", "4/5/6 axles"]
+    required = {"Toll plaza", "Latitude", "Longitude", "Total.1", *categories}
+    if not required.issubset(frame.columns):
+        raise ValueError(f"ETTM counts missing columns: {sorted(required - set(frame.columns))}")
+    stations = []
+    for _, row in frame.iterrows():
+        values = {
+            key: float(str(row[key]).replace(",", "").strip())
+            for key in [*categories, "Total.1"]
+        }
+        lat = float(row["Latitude"].strip().lstrip("~"))
+        lon = float(row["Longitude"].strip().lstrip("~"))
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            raise ValueError(f"Invalid ETTM coordinates for {row['Toll plaza']}")
+        if any(not math.isfinite(value) or value < 0 for value in values.values()):
+            raise ValueError(f"Invalid ETTM count for {row['Toll plaza']}")
+        approximate = any("~" in row[key] for key in ("Latitude", "Longitude"))
+        adt = values["Total.1"]
+        stations.append({
+            "road_id": "N-5", "lat": lat, "lon": lon, "rd_km": None,
+            "label": "ETTM Toll Plaza", "name": " ".join(row["Toll plaza"].split()),
+            "adt_text": f"{adt:,.0f}", "adt_compact": format_count(adt),
+            "color": TRAFFIC_MARKER_COLOR, "border": TRAFFIC_MARKER_BORDER,
+            "popup": build_ettm_popup(row["Toll plaza"], values, approximate),
+        })
     return stations
