@@ -122,27 +122,36 @@ st.markdown(
             color: inherit;
             line-height: 1.2;
         }
-        .built-by-watermark {
-            position: fixed;
-            left: max(1rem, 22rem);
-            bottom: 0.85rem;
-            z-index: 999;
-            padding: 0.42rem 0.72rem;
-            border: 1px solid rgba(15, 23, 42, 0.12);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.86);
-            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.10);
+        .sidebar-team-credit {
+            margin-top: 1.5rem;
+            padding: 1rem 0 0.5rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.3);
             color: #334155;
             font-size: 0.76rem;
             font-weight: 600;
-            backdrop-filter: blur(8px);
         }
-        @media (max-width: 760px) {
-            .built-by-watermark {
-                left: 0.75rem;
-                right: auto;
-                max-width: calc(100vw - 1.5rem);
-            }
+        .team-credit-title {
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.45rem;
+        }
+        .team-credit-person + .team-credit-person {
+            margin-top: 0.4rem;
+        }
+        .team-credit-name {
+            font-size: 0.76rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #1e293b;
+        }
+        .team-credit-role {
+            font-size: 0.67rem;
+            font-weight: 400;
+            line-height: 1.4;
+            color: #64748b;
         }
         [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"],
         [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"],
@@ -228,16 +237,6 @@ st.markdown(
 
 st.title("Road Condition Map")
 st.caption("N5 · Multan to Peshawar")
-
-st.markdown(
-    """
-    <div class="built-by-watermark">
-        Built by Zohaib Shafqat, AI Engineer
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
 
 st.markdown(
     """
@@ -343,6 +342,23 @@ with st.sidebar:
             st.caption(f"{len(count_stations)} traffic count station(s) shown.")
         else:
             st.caption("No count stations found for this selection.")
+
+    st.markdown(
+        """
+        <div class="sidebar-team-credit">
+            <div class="team-credit-title">Project team</div>
+            <div class="team-credit-person">
+                <div class="team-credit-name">Dr. Azam Ali</div>
+                <div class="team-credit-role">Transport Engineer</div>
+            </div>
+            <div class="team-credit-person">
+                <div class="team-credit-name">Engr. Zohaib Shafqat</div>
+                <div class="team-credit-role">AI Engineer</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 bounds_list = [roads[label]["bounds"] for label in selected_labels]
 minx = min(b[0] for b in bounds_list)
