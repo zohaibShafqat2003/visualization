@@ -126,32 +126,34 @@ st.markdown(
             margin-top: 1.5rem;
             padding: 1rem 0 0.5rem;
             border-top: 1px solid rgba(148, 163, 184, 0.3);
-            color: #334155;
+            color: inherit;
             font-size: 0.76rem;
             font-weight: 600;
         }
         .team-credit-title {
-            font-size: 0.62rem;
+            font-size: 0.68rem;
             font-weight: 600;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #64748b;
+            color: inherit;
+            opacity: 0.85;
             margin-bottom: 0.45rem;
         }
         .team-credit-person + .team-credit-person {
             margin-top: 0.4rem;
         }
         .team-credit-name {
-            font-size: 0.76rem;
+            font-size: 0.82rem;
             font-weight: 600;
             line-height: 1.3;
-            color: #1e293b;
+            color: inherit;
         }
         .team-credit-role {
-            font-size: 0.67rem;
+            font-size: 0.75rem;
             font-weight: 400;
             line-height: 1.4;
-            color: #64748b;
+            color: inherit;
+            opacity: 0.85;
         }
         [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"],
         [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"],
