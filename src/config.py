@@ -51,7 +51,7 @@ RSL_CATEGORIES = [
 ]
 
 STATUS_CATEGORY_COLORS = {
-    "iRAP": "#0891b2",
+    "iRAP": "#00A6D6",
     "AIB": "#db2777",
     "Very Poor": "#d73027",
     "Poor": "#facc15",
@@ -60,7 +60,7 @@ STATUS_CATEGORY_COLORS = {
     "Under construction": "#8E24AA",
     "Rehabilitation Project": "#795548",
     "DLC": "#424242",
-    "LDA": "#00ACC1",
+    "LDA": "#E87900",
     "PDA": "#9E9D24",
     "Rigid Pavement": "#475569",
     "No data/single carriageway": "#BDBDBD",
@@ -71,7 +71,7 @@ STATUS_CATEGORY_ORDER = list(STATUS_CATEGORY_COLORS)
 NODATA_LABEL = "No data/single carriageway"
 NODATA_COLOR = "#BDBDBD"
 GEOMETRY_SIMPLIFY_TOLERANCE = 0.00015
-ROAD_DATA_CACHE_VERSION = 11
+ROAD_DATA_CACHE_VERSION = 12
 TRAFFIC_MARKER_COLOR = "#c92a2a"
 TRAFFIC_MARKER_BORDER = "#f1b6b6"
 TRAFFIC_POPUP_CACHE_VERSION = 9

@@ -16,7 +16,19 @@ def main():
     if not backup.exists():
         shutil.copy2(path, backup)
     original = gpd.read_file(path)
-    updated = apply_n5_conditions(original.copy())
+    # Restore previous project assignments before applying the current ranges.
+    # Match by kilometer so moving a range does not leave its old labels behind.
+    baseline = gpd.read_file(backup).set_index("km")
+    if not baseline.index.is_unique:
+        raise ValueError("Original N5 backup contains duplicate kilometer keys")
+    updated = original.copy()
+    for column in ["status_north", "status_south"]:
+        assigned = updated[column].isin(["iRAP", "AIB", "LDA"])
+        keys = updated.loc[assigned, "km"]
+        if not keys.isin(baseline.index).all():
+            raise ValueError("Original conditions missing for previously assigned N5 kilometers")
+        updated.loc[assigned, column] = keys.map(baseline[column])
+    updated = apply_n5_conditions(updated)
     with tempfile.TemporaryDirectory(dir=DATA, prefix="n5-conditions-") as staging:
         output = Path(staging) / path.name
         updated.to_file(output, layer="segments_N5", driver="GPKG", index=False)

@@ -18,14 +18,27 @@ def safe_num(row, col):
 
 
 def build_count_marker_html(station):
-    return f"""
-    <div class="traffic-count-station-marker" style="position:relative;display:flex;align-items:center;gap:4px;
-        font-family:Inter,Segoe UI,Arial,sans-serif;transform:translate(-13px,-13px);">
+    if station.get("label") == "ETTM Toll Plaza":
+        symbol = """
+        <svg class="ettm-station-symbol" width="30" height="30" viewBox="0 0 32 32"
+            role="img" aria-label="ETTM toll plaza" style="flex-shrink:0;overflow:visible;filter:drop-shadow(0 2px 3px #0f172a55);">
+            <path d="M16 1 L31 16 L16 31 L1 16 Z" fill="#0f172a" stroke="white" stroke-width="2"/>
+            <path d="M10 22 V12 H22 V22 M9 12 L16 8 L23 12 M16 15 V22"
+                fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        """
+    else:
+        symbol = """
         <div style="width:22px;height:22px;border-radius:50%;background:#f97316;
             border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,.32);
             display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <div style="width:7px;height:7px;border-radius:50%;background:white;"></div>
         </div>
+        """
+    return f"""
+    <div class="traffic-count-station-marker" style="position:relative;display:flex;align-items:center;gap:4px;
+        font-family:Inter,Segoe UI,Arial,sans-serif;transform:translate(-13px,-13px);">
+        {symbol}
         <div style="background:rgba(255,255,255,.97);border:1px solid #fecaca;
             border-radius:6px;padding:2px 6px 3px 6px;
             box-shadow:0 2px 8px rgba(15,23,42,.22);line-height:1;white-space:nowrap;">

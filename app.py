@@ -39,6 +39,7 @@ from src.map_layers import (
 
 
 EXCLUDED_COUNT_STATION_ADTS = {"4,630"}
+EXCLUDED_ETTM_STATION_NAMES = {"Qutbal (ETTM)"}
 
 
 st.set_page_config(
@@ -121,39 +122,6 @@ st.markdown(
             font-size: 0.86rem;
             color: inherit;
             line-height: 1.2;
-        }
-        .sidebar-team-credit {
-            margin-top: 1.5rem;
-            padding: 1rem 0 0.5rem;
-            border-top: 1px solid rgba(148, 163, 184, 0.3);
-            color: inherit;
-            font-size: 0.76rem;
-            font-weight: 600;
-        }
-        .team-credit-title {
-            font-size: 0.68rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: inherit;
-            opacity: 0.85;
-            margin-bottom: 0.45rem;
-        }
-        .team-credit-person + .team-credit-person {
-            margin-top: 0.4rem;
-        }
-        .team-credit-name {
-            font-size: 0.82rem;
-            font-weight: 600;
-            line-height: 1.3;
-            color: inherit;
-        }
-        .team-credit-role {
-            font-size: 0.75rem;
-            font-weight: 400;
-            line-height: 1.4;
-            color: inherit;
-            opacity: 0.85;
         }
         [data-testid="stAppViewContainer"][data-baseweb-theme="dark"] [data-testid="stSidebar"],
         [data-testid="stAppViewContainer"][data-theme="dark"] [data-testid="stSidebar"],
@@ -261,7 +229,7 @@ with st.sidebar:
     selected_labels = ["N5"]
     section, n5_network, section_limits = prepare_n5_section(
         available_datasets["N5"],
-        cache_version=(11, os.stat(available_datasets["N5"]).st_mtime_ns),
+        cache_version=(16, os.stat(available_datasets["N5"]).st_mtime_ns),
     )
     roads = {"N5": section}
 
@@ -334,9 +302,12 @@ with st.sidebar:
             st.warning(f"Counts file not found: {COUNTS_PATH}")
         if "N5" in selected_labels:
             if os.path.exists(ETTM_COUNTS_PATH):
-                count_stations.extend(prepare_ettm_stations(
-                    ETTM_COUNTS_PATH, os.stat(ETTM_COUNTS_PATH).st_mtime_ns
-                ))
+                count_stations.extend(
+                    station for station in prepare_ettm_stations(
+                        ETTM_COUNTS_PATH, os.stat(ETTM_COUNTS_PATH).st_mtime_ns
+                    )
+                    if station["name"] not in EXCLUDED_ETTM_STATION_NAMES
+                )
             else:
                 st.warning(f"ETTM counts file not found: {ETTM_COUNTS_PATH}")
         count_stations = points_in_section(count_stations, n5_network, section_limits)
@@ -344,23 +315,6 @@ with st.sidebar:
             st.caption(f"{len(count_stations)} traffic count station(s) shown.")
         else:
             st.caption("No count stations found for this selection.")
-
-    st.markdown(
-        """
-        <div class="sidebar-team-credit">
-            <div class="team-credit-title">Project team</div>
-            <div class="team-credit-person">
-                <div class="team-credit-name">Dr. Azam Ali</div>
-                <div class="team-credit-role">Transport Engineer</div>
-            </div>
-            <div class="team-credit-person">
-                <div class="team-credit-name">Engr. Zohaib Shafqat</div>
-                <div class="team-credit-role">AI Engineer</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 bounds_list = [roads[label]["bounds"] for label in selected_labels]
 minx = min(b[0] for b in bounds_list)

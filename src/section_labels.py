@@ -1,13 +1,14 @@
+import json
+from pathlib import Path
+
 import folium
 
 from src.map_layers import to_geojson_line
 
 
-N5_SECTION_LABELS = [
-    {"label": "iRAP", "start_km": 1133, "end_km": 1283},
-    {"label": "AIB", "start_km": 1566, "end_km": 1605},
-    {"label": "AIB", "start_km": 1675, "end_km": 1706},
-]
+N5_SECTION_LABELS = json.loads(
+    (Path(__file__).resolve().parents[1] / "data/n5_condition_overrides.json").read_text(encoding="utf-8")
+)
 
 
 def add_section_labels(fmap, road):

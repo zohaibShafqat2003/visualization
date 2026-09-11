@@ -18,13 +18,16 @@ Notes:
   segments nearest the configured city locations (approximately km 929–1718).
   Conditions, distance markers, cities, and traffic stations follow this section.
 - N5 condition data in both directions is overwritten with **iRAP** (cyan)
-  at RD km 1133–1283 and **AIB** (pink) at RD km 1566–1605 and 1675–1706,
+  from Lahore toward Gujranwala (RD km 1281–1335), **LDA** (orange) at RD km 1260–1280
+  and **AIB** (pink) at RD km 1566–1605 and 1675–1706,
   including both endpoints. These categories appear in the map's Road condition
   key. Rules are stored in `data/n5_condition_overrides.json` and reapplied by
   data preparation. The original N5 file is preserved in
   `data/backup/segments_N5_before_project_conditions.gpkg`.
 - N5 also loads `data/traffic_counts_rauf_10.09.26.csv` when **Traffic count
-  stations** is enabled. These 13 records are labeled **ETTM Toll Plaza**.
+  stations** is enabled. These 13 records are labeled **ETTM Toll Plaza** and
+  use dark diamond markers with a white toll-gate symbol; other ADT stations use orange circles.
+  Qutbal (ETTM) is excluded from the map; its source record is retained.
   ADT uses the second `Total` column (the supplied daily counts), with the
   original vehicle categories retained. Approximate coordinates are noted in
   popups; collocated Chenab NB/SB records share a popup with separate counts.

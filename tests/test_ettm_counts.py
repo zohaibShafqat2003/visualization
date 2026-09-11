@@ -47,7 +47,8 @@ class ETTMCountsTests(unittest.TestCase):
                 app.run()
             self.assertFalse(app.exception)
             stations = render.call_args.args[1]
-            self.assertEqual(sum(s.get('label') == 'ETTM Toll Plaza' for s in stations), 12)
+            self.assertEqual(sum(s.get('label') == 'ETTM Toll Plaza' for s in stations), 11)
+            self.assertNotIn('Qutbal (ETTM)', [s.get('name') for s in stations])
             self.assertNotIn('Khanbela', [s.get('name') for s in stations])
             self.assertEqual({s['road_id'] for s in stations}, {'N-5'})
             self.assertTrue(any('traffic count station(s) shown' in c.value for c in app.caption))

@@ -1,5 +1,6 @@
 [
-  {"label": "iRAP", "start_km": 1133, "end_km": 1283},
+  {"label": "LDA", "start_km": 1260, "end_km": 1280},
+  {"label": "iRAP", "start_km": 1281, "end_km": 1335},
   {"label": "AIB", "start_km": 1566, "end_km": 1605},
   {"label": "AIB", "start_km": 1675, "end_km": 1706}
 ]

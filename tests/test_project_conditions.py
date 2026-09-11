@@ -29,15 +29,18 @@ class ProjectConditionTests(unittest.TestCase):
         roads = {'N5': road}
         for direction in ['north', 'south']:
             totals = condition_kilometers(roads, ['N5'], direction)
-            self.assertEqual(totals['iRAP'], 151)
+            self.assertEqual(totals['iRAP'], 55)
+            for feature in road['features']:
+                if 1260 <= feature['km'] <= 1280:
+                    self.assertEqual(feature[f'{direction}_label'], 'LDA')
             self.assertEqual(totals['AIB'], 72)
             categories = road_status_categories(roads, ['N5'], direction)
-            for name in ['iRAP', 'AIB']:
+            for name in ['iRAP', 'AIB', 'LDA']:
                 self.assertIn((name, STATUS_CATEGORY_COLORS[name]), categories)
             fmap = folium.Map()
             add_condition_legend(fmap, direction, totals, categories)
             html = fmap.get_root().render()
-            for name in ['iRAP', 'AIB']:
+            for name in ['iRAP', 'AIB', 'LDA']:
                 self.assertIn(name, html)
                 self.assertIn(STATUS_CATEGORY_COLORS[name], html)
 
