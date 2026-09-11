@@ -32,7 +32,7 @@ Notes:
   stations** is enabled. These 13 records are labeled **ETTM Toll Plaza** and
   use dark diamond markers with a white toll-gate symbol; other ADT stations use orange circles.
   Qutbal (ETTM) is excluded from the map; its source record is retained.
-  ADT uses the second `Total` column (the supplied daily counts), with the
+  ETTM AADT (Average annual daily traffic) uses the second `Total` column, with the
   original vehicle categories retained. Approximate coordinates are noted in
   popups; collocated Chenab NB/SB records share a popup with separate counts.
 

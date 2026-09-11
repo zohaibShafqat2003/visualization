@@ -440,7 +440,7 @@ def prepare_count_stations(path, popup_cache_version):
 
 
 @st.cache_data(show_spinner="Loading ETTM toll plazas...", max_entries=2)
-def prepare_ettm_stations(path, file_mtime, popup_cache_version=3):
+def prepare_ettm_stations(path, file_mtime, popup_cache_version=4):
     """Read the supplied daily counts; pandas names the second Total as Total.1."""
     frame = pd.read_csv(path, dtype=str)
     frame.columns = frame.columns.str.strip()

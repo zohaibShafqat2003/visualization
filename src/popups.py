@@ -43,7 +43,7 @@ def build_count_marker_html(station):
             border-radius:6px;padding:2px 6px 3px 6px;
             box-shadow:0 2px 8px rgba(15,23,42,.22);line-height:1;white-space:nowrap;">
             <div style="font-size:9px;color:#64748b;font-weight:700;letter-spacing:.02em;">{escape(station.get('label', 'ADT'))}</div>
-            <div style="font-size:12px;color:#0f172a;font-weight:800;margin-top:1px;">{station['adt_compact']}</div>
+            <div style="font-size:12px;color:#0f172a;font-weight:800;margin-top:1px;">{'AADT ' if station.get('label') == 'ETTM Toll Plaza' else ''}{station['adt_compact']}</div>
         </div>
     </div>
     """
@@ -68,10 +68,10 @@ def build_ettm_popup(name, values, approximate):
         <div style="font-size:12px;color:#64748b;margin-bottom:12px;">{escape(' '.join(name.split()))}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
             <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#f8fafc;">
-                <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Average daily traffic (ADT)</div>
+                <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Average annual daily traffic (AADT)</div>
                 <div style="font-size:24px;font-weight:800;margin-top:3px;">{adt:,.0f}</div>
             </div>
-            <div title="Calculated as (2/3 axles + 4/5/6 axles) / ADT" style="border:1px solid #f3b59b;border-radius:8px;padding:10px;background:#fff0e8;">
+            <div title="Calculated as (2/3 axles + 4/5/6 axles) / AADT" style="border:1px solid #f3b59b;border-radius:8px;padding:10px;background:#fff0e8;">
                 <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Heavy traffic share</div>
                 <div style="font-size:24px;font-weight:800;margin-top:3px;color:#e85d2a;">{heavy_pct}</div>
             </div>
