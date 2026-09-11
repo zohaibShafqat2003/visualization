@@ -17,9 +17,9 @@ Notes:
 - The map displays only N5 from Multan to Peshawar. Endpoints use the N5
   segments nearest the configured city locations (approximately km 929–1718).
   Conditions, distance markers, cities, and traffic stations follow this section.
-- N5 condition data in both directions is overwritten with **iRAP** (cyan)
+- N5 condition data in both directions is overwritten with **iRAP** (gray)
   from Lahore toward Gujranwala (RD km 1281–1335), **LDA** (orange) at RD km 1260–1280
-  and **AIB** (pink) at RD km 1566–1605 and 1675–1706,
+  and **AIB** (gray) at RD km 1566–1605 and 1675–1706,
   including both endpoints. These categories appear in the map's Road condition
   key. Rules are stored in `data/n5_condition_overrides.json` and reapplied by
   data preparation. The original N5 file is preserved in
