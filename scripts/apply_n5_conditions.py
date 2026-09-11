@@ -23,7 +23,7 @@ def main():
         raise ValueError("Original N5 backup contains duplicate kilometer keys")
     updated = original.copy()
     for column in ["status_north", "status_south"]:
-        assigned = updated[column].isin(["iRAP", "AIB", "LDA"])
+        assigned = updated[column].isin(["iRAP", "AIB", "LDA", "cantt/RDA", "Cantt/RDA"])
         keys = updated.loc[assigned, "km"]
         if not keys.isin(baseline.index).all():
             raise ValueError("Original conditions missing for previously assigned N5 kilometers")

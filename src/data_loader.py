@@ -34,6 +34,7 @@ def classify_status(status):
     labels = {
         "irap": "iRAP",
         "aib": "AIB",
+        "cantt/rda": "Cantt/RDA",
         "very poor": "Very Poor",
         "poor": "Poor",
         "fair": "Fair",

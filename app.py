@@ -229,7 +229,7 @@ with st.sidebar:
     selected_labels = ["N5"]
     section, n5_network, section_limits = prepare_n5_section(
         available_datasets["N5"],
-        cache_version=(17, os.stat(available_datasets["N5"]).st_mtime_ns),
+        cache_version=(19, os.stat(available_datasets["N5"]).st_mtime_ns),
     )
     roads = {"N5": section}
 

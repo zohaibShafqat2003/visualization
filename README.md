@@ -24,6 +24,9 @@ Notes:
   key. Rules are stored in `data/n5_condition_overrides.json` and reapplied by
   data preparation. The original N5 file is preserved in
   `data/backup/segments_N5_before_project_conditions.gpkg`.
+  **Cantt/RDA** uses the same gray at RD km 1539–1565 in both directions,
+  matching the whole N5 segments between the supplied T-Chowk and 26 Number
+  screenshots. AIB continues from km 1566.
 - N5 also loads `data/traffic_counts_rauf_10.09.26.csv` when **Traffic count
   stations** is enabled. These 13 records are labeled **ETTM Toll Plaza** and
   use dark diamond markers with a white toll-gate symbol; other ADT stations use orange circles.
