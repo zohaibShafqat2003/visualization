@@ -18,6 +18,8 @@ def prepare_n5_section(path, cache_version=ROAD_DATA_CACHE_VERSION):
     endpoints = [next(c for c in MAJOR_CITIES if c['road'] == 'N5' and c['name'] == name)
                  for name in ('Multan', 'Peshawar')]
     limits = sorted(nearest_km(network, c['lat'], c['lon']) for c in endpoints)
+    # Omit the terminal Peshawar section (PDA northbound / No Data southbound).
+    limits[1] = min(limits[1], 1706)
     section = frame[frame.km.between(*limits)].copy()
     if section.empty:
         raise ValueError('No N5 segments found between Multan and Peshawar.')

@@ -13,6 +13,15 @@ from src.route_section import prepare_n5_section
 
 
 class ProjectConditionTests(unittest.TestCase):
+    def test_peshawar_tail_is_excluded_from_map(self):
+        road, _, limits = prepare_n5_section(DATASETS['N5'])
+        self.assertEqual(limits[1], 1706)
+        self.assertEqual(max(f['km'] for f in road['features']), 1706)
+        self.assertTrue(all(m['km'] <= 1706 for m in road['distance_markers']))
+        for direction in ['north', 'south']:
+            totals = condition_kilometers({'N5': road}, ['N5'], direction)
+            self.assertNotIn('PDA', totals)
+
     def test_only_requested_status_rows_changed(self):
         frame = gpd.read_file(DATASETS['N5'])
         original = gpd.read_file('data/backup/segments_N5_before_project_conditions.gpkg')

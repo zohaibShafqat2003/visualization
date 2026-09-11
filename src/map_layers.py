@@ -83,8 +83,10 @@ def add_condition_corridor(fmap, road, direction_key):
                     "color": run["color"],
                     "weight": road_overlay_weight(run["label"]),
                     "opacity": 0.92 if run["label"] != NODATA_LABEL else 0.7,
-                    "dashArray": "6,6" if run["label"] == NODATA_LABEL else None,
-                    "lineCap": "butt",
+                    "dashArray": "1,10" if run["label"] == "Cantt/RDA" else (
+                        "6,6" if run["label"] == NODATA_LABEL else None
+                    ),
+                    "lineCap": "round" if run["label"] == "Cantt/RDA" else "butt",
                 },
             }
         )
@@ -100,10 +102,17 @@ def format_km(value):
 def add_condition_legend(fmap, direction_choice, km_totals, categories):
     rows = []
     for label, color in categories:
+        swatch = (
+            f'<svg width="28" height="13" viewBox="0 0 28 13" aria-hidden="true">'
+            f'<path d="M3 6.5 H25" stroke="{color}" stroke-width="5" '
+            f'stroke-linecap="round" stroke-dasharray="1 8"/></svg>'
+            if label == "Cantt/RDA" else
+            f'<span style="display:inline-block;width:13px;height:13px;background:{color};"></span>'
+        )
         rows.append(
             f"""
-            <div style="display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
-                <span style="display:inline-block;width:13px;height:13px;background:{color};"></span>
+            <div style="display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:8px;margin:3px 0;">
+                {swatch}
                 <span>{label}</span>
                 <span style="font-weight:700;">{format_km(km_totals.get(label, 0.0))}</span>
             </div>

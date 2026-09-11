@@ -15,7 +15,8 @@ Notes:
 - Place the GeoPackage files at `data/segments_N5.gpkg`, `data/segments_N55_manual_final.gpkg`, and `data/counts_N5_N55.gpkg`.
 - The Streamlit entrypoint is `app.py`.
 - The map displays only N5 from Multan to Peshawar. Endpoints use the N5
-  segments nearest the configured city locations (approximately km 929–1718).
+  segment nearest Multan (approximately km 929), ending at km 1706 before
+  the terminal Peshawar PDA section. Km 1707–1718 is excluded in both directions.
   Conditions, distance markers, cities, and traffic stations follow this section.
 - N5 condition data in both directions is overwritten with **iRAP** (gray)
   from Lahore toward Gujranwala (RD km 1281–1335), **LDA** (orange) at RD km 1260–1280
@@ -24,7 +25,7 @@ Notes:
   key. Rules are stored in `data/n5_condition_overrides.json` and reapplied by
   data preparation. The original N5 file is preserved in
   `data/backup/segments_N5_before_project_conditions.gpkg`.
-  **Cantt/RDA** uses the same gray at RD km 1539–1565 in both directions,
+  **Cantt/RDA** uses a dotted gray line (and matching map-key symbol) at RD km 1539–1565 in both directions,
   matching the whole N5 segments between the supplied T-Chowk and 26 Number
   screenshots. AIB continues from km 1566.
 - N5 also loads `data/traffic_counts_rauf_10.09.26.csv` when **Traffic count
