@@ -61,7 +61,7 @@ STATUS_CATEGORY_COLORS = {
     "Under construction": "#8E24AA",
     "Rehabilitation Project": "#795548",
     "DLC": "#424242",
-    "LDA": "#E87900",
+    "LDA": "#6B7280",
     "PDA": "#9E9D24",
     "Rigid Pavement": "#475569",
     "No data/single carriageway": "#BDBDBD",
